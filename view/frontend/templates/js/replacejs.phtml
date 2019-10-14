@@ -609,8 +609,8 @@ ob_start();
             },
 
             check: function () {
-                var cart_grand_total = parseFloat(window.checkoutConfig.quoteData.grand_total);
-                if( cart_grand_total < 50.00 ){
+                var bolt_cart_grand_total = parseFloat(window.checkoutConfig.quoteData.grand_total);
+                if( bolt_cart_grand_total < 50.00 ){
                     var boltModal = $('#bolt-modal'),
                         errorMsg = 'Minimum order amount is $50.00';
         
