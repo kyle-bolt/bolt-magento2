@@ -136,6 +136,11 @@ class Discount extends AbstractHelper
     protected $aheadworksCustomerStoreCreditManagement;
 
     /**
+     * @var ThirdPartyModuleFactory
+     */
+    protected $magestoreGiftvoucher;
+
+    /**
      * @var CartRepositoryInterface
      */
     protected $quoteRepository;
@@ -186,6 +191,7 @@ class Discount extends AbstractHelper
      * @param ThirdPartyModuleFactory $amastyRewardsResourceQuote
      * @param ThirdPartyModuleFactory $amastyRewardsQuote
      * @param ThirdPartyModuleFactory $aheadworksCustomerStoreCreditManagement
+     * @param ThirdPartyModuleFactory $magestoreGiftvoucher
      * @param CartRepositoryInterface $quoteRepository
      * @param ConfigHelper            $configHelper
      * @param Bugsnag                 $bugsnag
@@ -214,6 +220,7 @@ class Discount extends AbstractHelper
         ThirdPartyModuleFactory $amastyRewardsResourceQuote,
         ThirdPartyModuleFactory $amastyRewardsQuote,
         ThirdPartyModuleFactory $aheadworksCustomerStoreCreditManagement,
+        ThirdPartyModuleFactory $magestoreGiftvoucher,
         CartRepositoryInterface $quoteRepository,
         ConfigHelper $configHelper,
         Bugsnag $bugsnag,
@@ -239,6 +246,7 @@ class Discount extends AbstractHelper
         $this->amastyRewardsResourceQuote = $amastyRewardsResourceQuote;
         $this->amastyRewardsQuote = $amastyRewardsQuote;
         $this->aheadworksCustomerStoreCreditManagement = $aheadworksCustomerStoreCreditManagement;
+        $this->magestoreGiftvoucher = $magestoreGiftvoucher;
         $this->quoteRepository = $quoteRepository;
         $this->configHelper = $configHelper;
         $this->bugsnag = $bugsnag;
@@ -915,5 +923,21 @@ class Discount extends AbstractHelper
         // Amasty reward points are held in a separate table
         // and are not assigned to the quote / totals directly out of the customer session.
         $this->setAmastyRewardPoints($quote);
+    }
+
+    /**
+     * @param $gvCode
+     * @param $store
+     * @return mixed
+     */
+    public function getMagestoreGiftVoucherBalanceByCode($gvCode)
+    {
+        /** @var \Magestore\Giftvoucher\Api\Data\GiftvoucherInterface $giftvoucherInstance */
+        $giftvoucherInstance = $this->magestoreGiftvoucher->getInstance();
+
+        $giftvoucher = $giftvoucherInstance->loadByCode($gvCode);
+        $balance = $giftvoucher->getBalance();
+
+        return $balance;
     }
 }

@@ -1409,7 +1409,8 @@ class Cart extends AbstractHelper
         // selecting specific shipping option, so the conditional statement should also
         // check if getCouponCode is not null
         /////////////////////////////////////////////////////////////////////////////////
-        if ( ( $amount = abs( $address->getDiscountAmount() ) ) || $address->getCouponCode() ) {
+//        if ( ( $amount = abs( $address->getDiscountAmount() ) ) || $address->getCouponCode() ) {
+        if ( ( $amount = abs( $address->getDiscountAmount() ) ) && $address->getCouponCode() ) {
             $roundedAmount = $this->getRoundAmount($amount);
 
             $discounts[] = [
@@ -1579,6 +1580,11 @@ class Cart extends AbstractHelper
                     }
                 }
 
+                if ($discount === Discount::GIFT_VOUCHER && $amount == 0) {
+                    $gvCode = $quote->getData('gift_voucher_gift_codes');
+                    $amount = $this->discountHelper->getMagestoreGiftVoucherBalanceByCode($gvCode);
+                }
+
                 $amount = abs($amount);
                 $roundedAmount = $this->getRoundAmount($amount);
 
@@ -1587,8 +1593,8 @@ class Cart extends AbstractHelper
                     'amount'      => $roundedAmount,
                 ];
 
-                if ($discount == Discount::GIFT_VOUCHER) {
-                    // the amount is added to adress discount included above, $address->getDiscountAmount(),
+                if ($discount == Discount::GIFT_VOUCHER && $roundedAmount > 0) {
+                    // the amount is added to address discount included above, $address->getDiscountAmount(),
                     // by plugin implementation, subtract it so this discount is shown separately and totals are in sync
                     $discounts[0]['amount'] -= $roundedAmount;
                 } else {

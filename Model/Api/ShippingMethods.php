@@ -646,6 +646,22 @@ class ShippingMethods implements ShippingMethodsInterface
                 $quote->setCouponCode($appliedQuoteCouponCode)->collectTotals()->save();
             }
 
+            // Magestore_Giftvoucher: clean item fields for every shipping rates to avoid
+            // double calculation of GiftCard.
+            if ($quote->getGiftVoucherDiscount() > 0) {
+                foreach ($quote->getAllItems() as $_item) {
+                    if ($_item->getParentItemId()) {
+                        continue;
+                    }
+                    $_item->setBaseGiftVoucherDiscount(0)
+                        ->setGiftVoucherDiscount(0)
+                        ->setMagestoreBaseDiscount(0)
+                        ->setMagestoreDiscount(0)
+                        ->setBaseDiscountAmount(0)
+                        ->setDiscountAmount(0);
+                }
+            }
+
             $this->totalsCollector->collectAddressTotals($quote, $shippingAddress);
             if($this->doesDiscountApplyToShipping($quote)){
                 // In order to get correct shipping discounts the following method must be called twice.

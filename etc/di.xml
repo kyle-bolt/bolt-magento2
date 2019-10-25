@@ -195,6 +195,13 @@
         </arguments>
     </virtualType>
 
+    <virtualType name="boltMagestoreGiftvoucherInterface" type="Bolt\Boltpay\Model\ThirdPartyModuleFactory">
+        <arguments>
+            <argument name="moduleName" xsi:type="string">Magestore_Giftvoucher</argument>
+            <argument name="className" xsi:type="string">Magestore\Giftvoucher\Api\Data\GiftvoucherInterface</argument>
+        </arguments>
+    </virtualType>
+
     <type name="Bolt\Boltpay\Helper\Discount">
         <arguments>
             <argument name="amastyAccountFactory" xsi:type="object">boltAmastyAccountFactory</argument>
@@ -213,6 +220,7 @@
             <argument name="amastyRewardsResourceQuote" xsi:type="object">boltAmastyRewardsResourceQuote</argument>
             <argument name="amastyRewardsQuote" xsi:type="object">boltAmastyRewardsQuote</argument>
             <argument name="aheadworksCustomerStoreCreditManagement" xsi:type="object">boltAheadworksCustomerStoreCreditManagementInterface</argument>
+            <argument name="magestoreGiftvoucher" xsi:type="object">boltMagestoreGiftvoucherInterface</argument>
         </arguments>
     </type>
 
