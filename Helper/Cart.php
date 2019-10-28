@@ -1580,7 +1580,7 @@ class Cart extends AbstractHelper
                     }
                 }
 
-                if ($discount === Discount::GIFT_VOUCHER && $amount == 0) {
+                if ($discount === Discount::GIFT_VOUCHER) {
                     $gvCode = $quote->getData('gift_voucher_gift_codes');
                     $amount = $this->discountHelper->getMagestoreGiftVoucherBalanceByCode($gvCode);
                 }
@@ -1593,10 +1593,13 @@ class Cart extends AbstractHelper
                     'amount'      => $roundedAmount,
                 ];
 
-                if ($discount == Discount::GIFT_VOUCHER && $roundedAmount > 0) {
+                if ($discount == Discount::GIFT_VOUCHER && count($discounts) > 1 && $discounts[0]['amount'] > 0) {
                     // the amount is added to address discount included above, $address->getDiscountAmount(),
                     // by plugin implementation, subtract it so this discount is shown separately and totals are in sync
                     $discounts[0]['amount'] -= $roundedAmount;
+
+                    // If customer applied default discount (from cart  price rule).
+                    $discounts[0]['amount'] -= $this->getRoundAmount($quote->getGiftVoucherDiscount());
                 } else {
                     $diff -= $amount * 100 - $roundedAmount;
                     $totalAmount -= $roundedAmount;
