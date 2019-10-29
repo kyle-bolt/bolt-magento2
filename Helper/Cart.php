@@ -1596,7 +1596,7 @@ class Cart extends AbstractHelper
                 if ($discount == Discount::GIFT_VOUCHER && count($discounts) > 1 && $discounts[0]['amount'] > 0) {
                     // the amount is added to address discount included above, $address->getDiscountAmount(),
                     // by plugin implementation, subtract it so this discount is shown separately and totals are in sync
-                    $discounts[0]['amount'] -= $roundedAmount;
+//                    $discounts[0]['amount'] -= $roundedAmount;
 
                     // If customer applied default discount (from cart  price rule).
                     $discounts[0]['amount'] -= $this->getRoundAmount($quote->getGiftVoucherDiscount());
