@@ -632,9 +632,9 @@ class CreateOrder implements CreateOrderInterface
     {
         if ($quote->getShippingAddress() && !$quote->isVirtual()) {
             $amount = $quote->getShippingAddress()->getShippingAmount();
-//            if (! $this->isBackOfficeOrder($quote)) {
-//                $amount -= $quote->getShippingAddress()->getShippingDiscountAmount();
-//            }
+            if (! $this->isBackOfficeOrder($quote)) {
+                $amount -= $quote->getShippingAddress()->getShippingDiscountAmount();
+            }
             $storeCost = $this->cartHelper->getRoundAmount($amount);
         } else {
             $storeCost = 0;

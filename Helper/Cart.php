@@ -1605,8 +1605,9 @@ class Cart extends AbstractHelper
                 }
 
                 if ($discount === Discount::GIFT_VOUCHER) {
-                    $gvCode = $quote->getData('gift_voucher_gift_codes');
-                    $amount = $this->discountHelper->getMagestoreGiftVoucherBalanceByCode($gvCode);
+//                    $gvCode = $quote->getData('gift_voucher_gift_codes');
+//                    $amount = $this->discountHelper->getMagestoreGiftVoucherBalanceByCode($gvCode);
+                    $amount = $quote->getGiftVoucherDiscount();
                 }
 
                 $amount = abs($amount);
