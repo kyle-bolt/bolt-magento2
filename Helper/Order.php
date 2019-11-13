@@ -1521,9 +1521,9 @@ class Order extends AbstractHelper
         // preset default payment / transaction values
         // before more specific changes below
         if ($newCapture) {
-            $amount = $newCapture->amount->amount;
+            $amount = (int) $newCapture->amount->amount;
         } else {
-            $amount = $transaction->amount->amount;
+            $amount = (int) $transaction->amount->amount;
         }
         $transactionId = $transaction->id;
 
@@ -1657,8 +1657,8 @@ class Order extends AbstractHelper
 
         // We will create an invoice if we have zero amount or new capture.
         if ($this->isCaptureHookRequest($newCapture) || $this->isZeroAmountHook($transactionState)) {
-            $this->validateCaptureAmount($order, $amount / 100);
-            $invoice = $this->createOrderInvoice($order, $realTransactionId, $amount / 100);
+            $this->validateCaptureAmount($order, $amount);
+            $invoice = $this->createOrderInvoice($order, $realTransactionId, $amount);
         }
 
         if (!$order->getTotalDue()) {
@@ -1709,7 +1709,12 @@ class Order extends AbstractHelper
     private function createOrderInvoice($order, $transactionId, $amount)
     {
         try {
-            if ($order->getTotalInvoiced() + $amount == $order->getGrandTotal()) {
+            $invoicedAmount   = $this->cartHelper->getRoundAmount($order->getTotalInvoiced()) + $amount;
+            $grandTotalAmount = $this->cartHelper->getRoundAmount($order->getGrandTotal());
+
+            $amount = $amount / 100;
+
+            if ($invoicedAmount === $grandTotalAmount) {
                 $invoice = $this->invoiceService->prepareInvoice($order);
             } else {
                 $invoice = $this->invoiceService->prepareInvoiceWithoutItems($order, $amount);
@@ -1766,16 +1771,30 @@ class Order extends AbstractHelper
 
     /**
      * @param OrderInterface $order
-     * @param                                        $captureAmount
+     * @param int            $captureAmount
      *
+     * @return void
      * @throws \Exception
      */
-    protected function validateCaptureAmount(OrderInterface $order, $captureAmount) {
-        $isInvalidAmount = !isset($captureAmount) || !is_numeric($captureAmount) || $captureAmount < 0;
-        $isInvalidAmountRange = $order->getTotalInvoiced() + $captureAmount > $order->getGrandTotal();
-
-        if($isInvalidAmount || $isInvalidAmountRange) {
+    protected function validateCaptureAmount(OrderInterface $order, $captureAmount)
+    {
+        if (!isset($captureAmount) || !is_numeric($captureAmount) || $captureAmount < 0) {
             throw new \Exception( __('Capture amount is invalid'));
+        }
+
+        /**
+         * Due to grand total sent to Bolt is rounded, the same operation should be used
+         * when validating captured amount.
+         * Rounding operations are applied to each operand in order to avoid cases when the grand total
+         * is formally less (before it has been rounded) than the sum of the captured amount and the total invoiced.
+         */
+        $captured = $this->cartHelper->getRoundAmount($order->getTotalInvoiced()) + $captureAmount;
+        $grandTotal = $this->cartHelper->getRoundAmount($order->getGrandTotal());
+
+        if ($captured > $grandTotal) {
+            throw new \Exception(
+                __('Capture amount is invalid: captured [%1], grand total [%2]', $captured, $grandTotal)
+            );
         }
     }
 
