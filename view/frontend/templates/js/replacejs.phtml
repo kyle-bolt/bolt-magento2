@@ -936,6 +936,34 @@ ob_start();
         ////////////////////////////////////////////////////////
 
         ///////////////////////////////////////////////////////////
+        // Customization for Ajaxcartpro popup (Aheadworks_Ajaxcartpro module).
+        ///////////////////////////////////////////////////////////
+        var $popup = $('.aw-acp-popup.aw-acp-popup-with-anim');
+        if ($popup.length > 0) {
+            $popup.on('awacpAction:beforeFire', function (event, params) {
+                var boltButton = $popup.find('.bolt-checkout-button.bolt-multi-step-checkout');
+
+                if (boltButton.length > 0) {
+                    $(boltButton).addClass('bolt-no-display');
+                }
+            });
+            $(document).on('awacpAction:addSuccess', function (event, params) {
+                var boltButton = $popup.find('.aw-acp-popup__submit-wrapper .bolt-checkout-button.bolt-multi-step-checkout'),
+                    checkoutButton = $popup.find('.aw-acp-popup__submit-wrapper button[data-action=checkout]');
+
+                if (checkout_buttons) {
+                    boltButton.removeClass('bolt-no-display');
+                    checkoutButton.addClass('bolt-no-display');
+
+                    checkoutButtonApply(function (button) {
+                        button.style.display = '';
+                    });
+                    processButtons();
+                }
+            });
+        }
+
+        ///////////////////////////////////////////////////////////
         // Run function fn on element underlying data change
         ///////////////////////////////////////////////////////////
         var monitorDataChange = function(selectors, fn, non_empty, visible_only) {
