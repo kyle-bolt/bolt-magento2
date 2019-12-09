@@ -83,55 +83,12 @@ class Order extends AbstractHelper
     const BOLT_ORDER_STATUS_PENDING = 'bolt_pending';
     const MAGENTO_ORDER_STATUS_PENDING = 'pending';
 
-    // Posible transation state transitions
-    private $validStateTransitions = [
-        null => [
-            self::TS_ZERO_AMOUNT,
-            self::TS_PENDING,
-            self::TS_COMPLETED, // back office
-            // for historic data (order placed before plugin update) does not have "previous state"
-            self::TS_CREDIT_COMPLETED
-        ],
-        self::TS_PENDING => [
-            self::TS_AUTHORIZED,
-            self::TS_COMPLETED,
-            self::TS_CANCELED,
-            self::TS_REJECTED_REVERSIBLE,
-            self::TS_REJECTED_IRREVERSIBLE,
-            self::TS_ZERO_AMOUNT
-        ],
-        self::TS_AUTHORIZED => [
-            self::TS_CAPTURED,
-            self::TS_CANCELED,
-            self::TS_COMPLETED
-        ],
-        self::TS_CAPTURED => [
-            self::TS_CAPTURED,
-            self::TS_CANCELED,
-            self::TS_COMPLETED,
-            self::TS_CREDIT_COMPLETED,
-            self::TS_PARTIAL_VOIDED
-        ],
-        self::TS_CANCELED => [self::TS_CANCELED],
-        self::TS_COMPLETED => [
-            self::TS_COMPLETED,
-            self::TS_CREDIT_COMPLETED
-        ],
-        self::TS_ZERO_AMOUNT => [],
-        self::TS_REJECTED_REVERSIBLE => [
-            self::TS_AUTHORIZED,
-            self::TS_COMPLETED,
-            self::TS_REJECTED_IRREVERSIBLE,
-            self::TS_CANCELED
-        ],
-        self::TS_REJECTED_IRREVERSIBLE => [self::TS_REJECTED_IRREVERSIBLE],
-        self::TS_CREDIT_COMPLETED => [
-            self::TS_CREDIT_COMPLETED,
-            self::TS_COMPLETED,
-            self::TS_CAPTURED,
-            self::TS_CANCELED
-        ]
-    ];
+    const TT_PAYMENT = 'cc_payment';
+    const TT_CREDIT = 'cc_credit';
+    const TT_PAYPAL_PAYMENT = 'paypal_payment';
+    const TT_PAYPAL_REFUND = 'paypal_refund';
+    const TT_APM_PAYMENT = 'apm_payment';
+    const TT_APM_REFUND = 'apm_refund';
 
     /**
      * @var ApiHelper
@@ -1134,7 +1091,16 @@ class Order extends AbstractHelper
      */
     public function getTransactionState($transaction, $payment, $hookType = null)
     {
-        $transactionState = $transaction->type.":".$transaction->status;
+        $transactionType = $transaction->type;
+        // If it is an apm type, it needs to behave as regular payment/credit.
+        // Since there are previous states saved, it needs to mimic "cc_payment"/"cc_credit"
+        if (in_array($transactionType, [self::TT_PAYPAL_PAYMENT, self::TT_APM_PAYMENT])) {
+            $transactionType = self::TT_PAYMENT;
+        }
+        if (in_array($transactionType, [self::TT_PAYPAL_REFUND, self::TT_APM_REFUND])) {
+            $transactionType = self::TT_CREDIT;
+        }
+        $transactionState = $transactionType.":".$transaction->status;
         $prevTransactionState = $payment->getAdditionalInformation('transaction_state');
         $transactionReference = $payment->getAdditionalInformation('transaction_reference');
         $transactionId = $payment->getAdditionalInformation('real_transaction_id');
@@ -1208,18 +1174,6 @@ class Order extends AbstractHelper
 
         // return transaction state as it is in fetched transaction info. No need to change it.
         return $transactionState;
-    }
-
-    /**
-     * Check if the transition from one transaction state to another is valid.
-     *
-     * @param string|null $prevTransactionState
-     * @param string $newTransactionState
-     * @return bool
-     */
-    private function validateTransition($prevTransactionState, $newTransactionState)
-    {
-        return in_array($newTransactionState, $this->validStateTransitions[$prevTransactionState]);
     }
 
     /**
@@ -1382,8 +1336,19 @@ class Order extends AbstractHelper
                 $order->setStatus($order->getConfig()->getStateDefaultStatus(OrderModel::STATE_HOLDED));
             }
         } elseif ($state == OrderModel::STATE_CANCELED) {
-            $this->cancelOrder($order);
-            return;
+            if ($order->canCancel()){
+                $this->cancelOrder($order);
+                return;
+            }
+
+            try{
+                // Restock product quantity when the payment is irreversibly rejected
+                $order->registerCancellation('', false);
+            } catch (\Exception $e){
+                // Put the order in "cancelled" state even if the previous call fails
+                $order->setState(OrderModel::STATE_CANCELED);
+                $order->setStatus($order->getConfig()->getStateDefaultStatus(OrderModel::STATE_CANCELED));
+            }
         } else {
             $order->setState($state);
             $order->setStatus($order->getConfig()->getStateDefaultStatus($state));
@@ -1500,14 +1465,6 @@ class Order extends AbstractHelper
                 $payment->setIsTransactionApproved(true);
             }
             return;
-        }
-
-        if (!$this->validateTransition($prevTransactionState, $transactionState)) {
-            throw new LocalizedException(__(
-                'Invalid transaction state transition: %1 -> %2',
-                $prevTransactionState,
-                $transactionState
-            ));
         }
 
         // The order has already been canceled, i.e. PERMANENTLY REJECTED

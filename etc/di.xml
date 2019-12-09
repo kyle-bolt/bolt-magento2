@@ -212,6 +212,20 @@
         </arguments>
     </virtualType>
 
+    <virtualType name="boltBssStoreCreditCollection" type="Bolt\Boltpay\Model\ThirdPartyModuleFactory">
+        <arguments>
+            <argument name="moduleName" xsi:type="string">Bss_StoreCredit</argument>
+            <argument name="className" xsi:type="string">Bss\StoreCredit\Model\ResourceModel\Credit\Collection</argument>
+        </arguments>
+    </virtualType>
+
+    <virtualType name="boltBssStoreCreditHelper" type="Bolt\Boltpay\Model\ThirdPartyModuleFactory">
+        <arguments>
+            <argument name="moduleName" xsi:type="string">Bss_StoreCredit</argument>
+            <argument name="className" xsi:type="string">Bss\StoreCredit\Helper\Data</argument>
+        </arguments>
+    </virtualType>
+
     <virtualType name="boltMagestoreGiftvoucherInterface" type="Bolt\Boltpay\Model\ThirdPartyModuleFactory">
         <arguments>
             <argument name="moduleName" xsi:type="string">Magestore_Giftvoucher</argument>
@@ -238,6 +252,8 @@
             <argument name="amastyRewardsResourceQuote" xsi:type="object">boltAmastyRewardsResourceQuote</argument>
             <argument name="amastyRewardsQuote" xsi:type="object">boltAmastyRewardsQuote</argument>
             <argument name="aheadworksCustomerStoreCreditManagement" xsi:type="object">boltAheadworksCustomerStoreCreditManagementInterface</argument>
+            <argument name="bssStoreCreditCollection" xsi:type="object">boltBssStoreCreditCollection</argument>
+            <argument name="bssStoreCreditHelper" xsi:type="object">boltBssStoreCreditHelper</argument>
             <argument name="magestoreGiftvoucher" xsi:type="object">boltMagestoreGiftvoucherInterface</argument>
         </arguments>
     </type>
