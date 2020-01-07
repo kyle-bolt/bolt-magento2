@@ -30,9 +30,9 @@ class ApiUtilsTest extends TestCase
 {
 
     /**
-     * @test
+     * @inheritdoc
      */
-    public function getJSONFromResponseBody_success() {
+    public function testGetJSONFromResponseBody_success() {
         $body = "{\"status\":\"ok\"}";
         $parsedBody = ApiUtils::getJSONFromResponseBody($body);
         $this->assertObjectHasAttribute("status", $parsedBody);
@@ -40,9 +40,9 @@ class ApiUtilsTest extends TestCase
     }
 
     /**
-     * @test
+     * @inheritdoc
      */
-    public function getJSONFromResponseBody_badJSON() {
+    public function testGetJSONFromResponseBody_badJSON() {
         $body = '{"status": notok}';
         $this->expectException(LocalizedException::class);
         $this->expectExceptionMessage("JSON Parse Error: Syntax error, malformed JSON");
@@ -51,9 +51,9 @@ class ApiUtilsTest extends TestCase
     }
 
     /**
-     * @test
+     * @inheritdoc
      */
-    public function getJSONFromResponseBody_errorFromBolt() {
+    public function testGetJSONFromResponseBody_errorFromBolt() {
         $body = '{"error": {"something": "here"}}';
         $this->expectException(LocalizedException::class);
         $this->expectExceptionMessageRegExp("/Bolt API Error.*/");
@@ -62,9 +62,9 @@ class ApiUtilsTest extends TestCase
     }
 
     /**
-     * @test
+     * @inheritdoc
      */
-    public function getJSONFromResponseBody_errorFromBoltWithMsg() {
+    public function testGetJSONFromResponseBody_errorFromBoltWithMsg() {
         $body = '{"errors": [{"message": "here"}]}';
         $this->expectException(LocalizedException::class);
         $this->expectExceptionMessageRegExp("/here.*/");
@@ -72,10 +72,7 @@ class ApiUtilsTest extends TestCase
         $this->assertEquals($result, null);
     }
 
-    /**
-     * @test
-     */
-    public function constructRequestHeaders_basic() {
+    public function testConstructRequestHeaders_basic() {
         $headers = ApiUtils::constructRequestHeaders(
             "storeVersion",
             "moduleVersion",
@@ -90,10 +87,7 @@ class ApiUtilsTest extends TestCase
         $this->assertEquals($headers["X-Api-Key"], "api-key");
     }
 
-    /**
-     * @test
-     */
-    public function constructRequestHeaders_skipsOverwritingWithAdditional() {
+    public function testConstructRequestHeaders_skipsOverwritingWithAdditional() {
         $headers = ApiUtils::constructRequestHeaders(
             "storeVersion",
             "moduleVersion",

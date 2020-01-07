@@ -48,9 +48,6 @@ use Bolt\Boltpay\Helper\Cart as CartHelper;
 use \Magento\Sales\Model\Order;
 use \Magento\Sales\Model\Order\Payment\Transaction\Repository as TransactionRepository;
 use \Magento\Sales\Model\Order\Payment\Transaction;
-use Magento\Sales\Model\Order\Invoice;
-use Magento\Sales\Model\ResourceModel\Order\Collection;
-
 
 /**
  * Class PaymentTest
@@ -173,7 +170,7 @@ class PaymentTest extends TestCase
     /**
      * @test
      */
-    public function canReviewPayment()
+    public function testCanReviewPayment()
     {
         $this->paymentInfo->method('getAdditionalInformation')
             ->with('transaction_state')
@@ -185,7 +182,7 @@ class PaymentTest extends TestCase
     /**
      * @test
      */
-    public function cannotReviewPayment()
+    public function testCannotReviewPayment()
     {
         $this->paymentInfo->method('getAdditionalInformation')
             ->with('transaction_state')
@@ -269,79 +266,22 @@ class PaymentTest extends TestCase
     /**
      * @test
      */
-    public function capturePayment_success() {
-        $this->orderMock->method( 'getOrderCurrencyCode' )->willReturn( 'USD' );
+    public function capturePayment_success()
+    {
         $this->mockApiResponse(
             "merchant/transactions/capture",
             '{"status": "completed", "reference": "ABCD-1234-XXXX"}'
         );
-        $this->orderHelper->expects( $this->once() )->method( 'updateOrderPayment' );
-        $this->apiHelper->expects( $this->once() )->method( 'buildRequest' )
-                        ->will( $this->returnCallback(
-                            function ( $data ) {
-                                $this->assertEquals( "USD", $data->getApiData()['currency'] );
-                                $this->assertEquals( "10000", $data->getApiData()['amount'] );
-                            }
-                        )
-                        );
+        $this->orderHelper->expects($this->once())->method('updateOrderPayment');
 
-        $this->currentMock->capture( $this->paymentMock, 100 );
-    }
-
-    /**
-     * @test
-     */
-    public function capturePayment_withDifferentCurrency_success() {
-        $this->orderMock->method( "getOrderCurrencyCode" )->willReturn( "CAD" );
-        $invoiceMock = $this->createMock( Invoice::class );
-        $invoiceMock->method( "getGrandTotal" )->willReturn( 123.45 );
-        $collectionMock = $this->createMock( Collection::class );
-        $collectionMock->method( "getLastItem" )->willReturn( $invoiceMock );
-        $this->orderMock->method( "getInvoiceCollection" )->willReturn( $collectionMock );
-        $this->mockApiResponse(
-            "merchant/transactions/capture",
-            '{"status": "completed", "reference": "ABCD-1234-XXXX"}'
-        );
-        $this->orderHelper->expects( $this->once() )->method( 'updateOrderPayment' );
-        $this->apiHelper->expects( $this->once() )->method( 'buildRequest' )
-                        ->will( $this->returnCallback(
-                            function ( $data ) {
-                                $this->assertEquals( "CAD", $data->getApiData()['currency'] );
-                                $this->assertEquals( "12345", $data->getApiData()['amount'] );
-                            }
-                        )
-                        );
-
-        $this->currentMock->capture( $this->paymentMock, 100 );
-    }
-
-    /**
-     * @test
-     */
-    public function capturePayment_skipHookNotification(){
-        $this->orderMock->method('getOrderCurrencyCode')->willReturn('USD');
-        $this->mockApiResponse(
-            "merchant/transactions/capture",
-            '{"status": "authorized", "reference": "ABCD-1234-XXXX"}'
-        );
-
-        $this->apiHelper->expects($this->once())->method('buildRequest')
-            ->will($this->returnCallback(
-                function($data)  {
-                    $this->assertTrue($data->getApiData()['skip_hook_notification']);
-                    }
-                )
-            );
         $this->currentMock->capture($this->paymentMock, 100);
     }
-
 
     /**
      * @test
      */
     public function capturePayment_success_multicapture()
     {
-        $this->orderMock->method('getOrderCurrencyCode')->willReturn('USD');
         // status stays 'authorized' if merchant has auto-capture enabled and some amount remains uncaptured
         $this->mockApiResponse(
             "merchant/transactions/capture",
@@ -357,7 +297,6 @@ class PaymentTest extends TestCase
      */
     public function capturePayment_throwExceptionWhenBoltRespondWithError()
     {
-        $this->orderMock->method('getOrderCurrencyCode')->willReturn('USD');
         $this->expectException(LocalizedException::class);
 
         $this->mockApiResponse(
@@ -374,7 +313,6 @@ class PaymentTest extends TestCase
      */
     public function capturePayment_invalidAmount()
     {
-        $this->orderMock->method('getOrderCurrencyCode')->willReturn('USD');
         $this->expectException(LocalizedException::class);
         $this->expectExceptionMessage('Invalid amount for capture.');
         $this->currentMock->capture($this->paymentMock, 0);
@@ -385,7 +323,6 @@ class PaymentTest extends TestCase
      */
     public function capturePayment_noTransactionId()
     {
-        $this->orderMock->method('getOrderCurrencyCode')->willReturn('USD');
         $this->expectException(LocalizedException::class);
         $this->expectExceptionMessage('Please wait while transaction get updated from Bolt.');
 
@@ -401,7 +338,6 @@ class PaymentTest extends TestCase
      */
     public function capturePayment_noResponse()
     {
-        $this->orderMock->method('getOrderCurrencyCode')->willReturn('USD');
         $this->expectException(LocalizedException::class);
         $this->expectExceptionMessage('Bad capture response from boltpay');
 
@@ -415,35 +351,11 @@ class PaymentTest extends TestCase
      */
     public function refundPayment_success()
     {
-        $this->orderMock->method( 'getOrderCurrencyCode' )->willReturn( 'USD' );
         $this->mockApiResponse(
             "merchant/transactions/credit",
             '{"status": "completed", "reference": "ABCD-1234-XXXX"}'
         );
         $this->orderHelper->expects($this->once())->method('updateOrderPayment');
-
-        $this->currentMock->refund($this->paymentMock, 100);
-    }
-
-    /**
-     * @test
-     */
-    public function refundPayment_withDifferentCurrency_success()
-    {
-        $this->orderMock->method( 'getOrderCurrencyCode' )->willReturn( 'CAD' );
-        $this->mockApiResponse(
-            "merchant/transactions/credit",
-            '{"status": "completed", "reference": "ABCD-1234-XXXX"}'
-        );
-        $this->orderHelper->expects($this->once())->method('updateOrderPayment');
-        $this->apiHelper->expects( $this->once() )->method( 'buildRequest' )
-                        ->will( $this->returnCallback(
-                            function ( $data ) {
-                                $this->assertEquals( "CAD", $data->getApiData()['currency'] );
-                                $this->assertEquals( "20000", $data->getApiData()['amount'] );
-                            }
-                        )
-                        );
 
         $this->currentMock->refund($this->paymentMock, 100);
     }
@@ -453,7 +365,6 @@ class PaymentTest extends TestCase
      */
     public function refundPayment_throwExceptionWhenBoltRespondWithError()
     {
-        $this->orderMock->method( 'getOrderCurrencyCode' )->willReturn( 'USD' );
         $this->expectException(LocalizedException::class);
 
         $this->mockApiResponse(
@@ -471,7 +382,6 @@ class PaymentTest extends TestCase
      */
     public function refundPayment_invalidAmount()
     {
-        $this->orderMock->method( 'getOrderCurrencyCode' )->willReturn( 'USD' );
         $this->expectException(LocalizedException::class);
         $this->expectExceptionMessage('Invalid amount for refund.');
         $this->currentMock->refund($this->paymentMock, 0);
@@ -482,7 +392,6 @@ class PaymentTest extends TestCase
      */
     public function refundPayment_noTransactionId()
     {
-        $this->orderMock->method( 'getOrderCurrencyCode' )->willReturn( 'USD' );
         $this->expectException(LocalizedException::class);
         $this->expectExceptionMessage('Please wait while transaction get updated from Bolt.');
 
@@ -498,7 +407,6 @@ class PaymentTest extends TestCase
      */
     public function refundPayment_noResponse()
     {
-        $this->orderMock->method( 'getOrderCurrencyCode' )->willReturn( 'USD' );
         $this->expectException(LocalizedException::class);
         $this->expectExceptionMessage('Bad refund response from boltpay');
 
@@ -748,18 +656,14 @@ class PaymentTest extends TestCase
 
         $this->orderMock = $this->getMockBuilder(Order::class)->disableOriginalConstructor()->getMock();
         $this->orderMock->method('getId')->willReturn('order-123');
-        $this->orderMock->method('getStoreCurrencyCode')->willReturn('USD');
         $this->paymentMock = $this->getMockBuilder(InfoInterface::class)
-            ->setMethods(['getId', 'getOrder', 'getCreditMemo' ])
+            ->setMethods(['getId', 'getOrder'])
             ->getMockForAbstractClass();
         $this->paymentMock->method('getId')->willReturn('payment-1');
         $this->paymentMock->method('getAdditionalInformation')
             ->with('real_transaction_id')
             ->willReturn('ABCD-1234-XXXX');
-        $creditMemoMock = $this->createMock(Order\Creditmemo::class);
-        $creditMemoMock->method("getGrandTotal")->willReturn(200);
         $this->paymentMock->method('getOrder')->willReturn($this->orderMock);
-        $this->paymentMock->method('getCreditMemo')->willReturn($creditMemoMock);
     }
 
     /**

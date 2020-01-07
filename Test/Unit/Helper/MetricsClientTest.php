@@ -180,9 +180,9 @@ class MetricsClientTest extends TestCase
     }
 
     /**
-     * @test
+     * @inheritdoc
      */
-    public function formatCountMetric()
+    public function testFormatCountMetric()
     {
         $data = [
             'value' => $this->countValue,
@@ -197,9 +197,9 @@ class MetricsClientTest extends TestCase
     }
 
     /**
-     * @test
+     * @inheritdoc
      */
-    public function addMetricLatency()
+    public function testAddMetricLatency()
     {
         $data = [
             'value' => $this->latencyValue,
@@ -214,9 +214,9 @@ class MetricsClientTest extends TestCase
     }
 
     /**
-     * @test
+     * @inheritdoc
      */
-    public function validWaitForFile()
+    public function testValidWaitForFile()
     {
         $structure = [
             'test' => [
@@ -254,9 +254,9 @@ class MetricsClientTest extends TestCase
     }
 
     /**
-     * @test
+     * @inheritdoc
      */
-    public function inValidWaitForFile()
+    public function testInValidWaitForFile()
     {
         $structure = [
             'test' => [
@@ -294,9 +294,9 @@ class MetricsClientTest extends TestCase
     }
 
     /**
-     * @test
+     * @inheritdoc
      */
-    public function emptyWaitForFile()
+    public function testEmptyWaitForFile()
     {
         $structure = [
             'test' => []
@@ -333,9 +333,9 @@ class MetricsClientTest extends TestCase
     }
 
     /**
-     * @test
+     * @inheritdoc
      */
-    public function validWriteMetricToFile()
+    public function testValidWriteMetricToFile()
     {
         $structure = [
             'test' => []
@@ -375,9 +375,9 @@ class MetricsClientTest extends TestCase
     }
 
     /**
-     * @test
+     * @inheritdoc
      */
-    public function noFileWriteMetricToFile()
+    public function testNoFileWriteMetricToFile()
     {
         $structure = [
             'test' => []
@@ -414,9 +414,9 @@ class MetricsClientTest extends TestCase
 
 
     /**
-     * @test
+     * @inheritdoc
      */
-    public function validProcessCountMetric()
+    public function testValidProcessCountMetric()
     {
         $this->configHelper->expects($this->once())
             ->method('shouldCaptureMetrics')
@@ -432,10 +432,7 @@ class MetricsClientTest extends TestCase
         $this->currentMock->processCountMetric($this->countKey, $this->countValue);
     }
 
-    /**
-     * @test
-     */
-    public function validProcessLatencyMetric()
+    public function testValidProcessLatencyMetric()
     {
         $this->configHelper->expects($this->once())
             ->method('shouldCaptureMetrics')
@@ -452,9 +449,9 @@ class MetricsClientTest extends TestCase
     }
 
     /**
-     * @test
+     * @inheritdoc
      */
-    public function flagOffProcessCountMetric()
+    public function testFlagOffProcessCountMetric()
     {
         $this->configHelper->method('shouldCaptureMetrics')
             ->will($this->returnValue(false));
@@ -468,9 +465,9 @@ class MetricsClientTest extends TestCase
     }
 
     /**
-     * @test
+     * @inheritdoc
      */
-    public function flagOffProcessLatencyMetric()
+    public function testFlagOffProcessLatencyMetric()
     {
         $this->configHelper->method('shouldCaptureMetrics')
             ->will($this->returnValue(false));
@@ -484,9 +481,9 @@ class MetricsClientTest extends TestCase
     }
 
     /**
-     * @test
+     * @inheritdoc
      */
-    public function postValidMetrics()
+    public function testPostValidMetrics()
     {
 
         $structure = [
@@ -528,9 +525,9 @@ class MetricsClientTest extends TestCase
     }
 
     /**
-     * @test
+     * @inheritdoc
      */
-    public function postNoCacheBatchMetrics()
+    public function testPostNoCacheBatchMetrics()
     {
 
         $structure = [
@@ -573,9 +570,9 @@ class MetricsClientTest extends TestCase
     }
 
     /**
-     * @test
+     * @inheritdoc
      */
-    public function postOldBatchMetrics()
+    public function testPostOldBatchMetrics()
     {
 
         $structure = [
@@ -618,9 +615,9 @@ class MetricsClientTest extends TestCase
     }
 
     /**
-     * @test
+     * @inheritdoc
      */
-    public function postRecentBatchMetrics()
+    public function testPostRecentBatchMetrics()
     {
 
         $structure = [
@@ -659,9 +656,9 @@ class MetricsClientTest extends TestCase
     }
 
     /**
-     * @test
+     * @inheritdoc
      */
-    public function postInValidMetrics()
+    public function testPostInValidMetrics()
     {
         $unSuccessfulEndpoint = new MockHandler([
             new Response(422, ['Content-Length' => 0])
@@ -708,9 +705,9 @@ class MetricsClientTest extends TestCase
     }
 
     /**
-     * @test
+     * @inheritdoc
      */
-    public function postMetricsBadEndpoint()
+    public function testPostMetricsBadEndpoint()
     {
 
         $invalidEndpoint = new MockHandler([
@@ -758,9 +755,9 @@ class MetricsClientTest extends TestCase
     }
 
     /**
-     * @test
+     * @inheritdoc
      */
-    public function flagOffPostMetrics()
+    public function testFlagOffPostMetrics()
     {
         $this->initPostMetrics();
 

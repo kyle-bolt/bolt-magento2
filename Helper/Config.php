@@ -151,21 +151,6 @@ class Config extends AbstractHelper
     const XML_PATH_SANDBOX_MODE = 'payment/boltpay/sandbox_mode';
 
     /**
-     * Path for custom API server, used only for dev mode.
-     */
-    const XML_PATH_CUSTOM_API = 'payment/boltpay/custom_api';
-
-    /**
-     * Path for custom merchant dash, used only for dev mode.
-     */
-    const XML_PATH_CUSTOM_MERCHANT_DASH = 'payment/boltpay/custom_merchant_dash';
-
-    /**
-     * Path for custom merchant dash, used only for dev mode.
-     */
-    const XML_PATH_CUSTOM_CDN = 'payment/boltpay/custom_cdn';
-
-    /**
      * Bolt sandbox url
      */
     const API_URL_SANDBOX = 'https://api-sandbox.bolt.com/';
@@ -238,11 +223,6 @@ class Config extends AbstractHelper
      * Use Store Credit on Shopping Cart configuration path
      */
     const XML_PATH_STORE_CREDIT = 'payment/boltpay/store_credit';
-
-    /**
-     * Use Reward Points on Shopping Cart configuration path
-     */
-    const XML_PATH_REWARD_POINTS = 'payment/boltpay/reward_points';
 
     /**
      * Payment Only Checkout Enabled configuration path
@@ -323,7 +303,7 @@ class Config extends AbstractHelper
     {
         //Check for sandbox mode
         if ($this->isSandboxModeSet($storeId)) {
-            return $this->getCustomURLValueOrDefault(self::XML_PATH_CUSTOM_API, self::API_URL_SANDBOX);
+            return self::API_URL_SANDBOX;
         } else {
             return self::API_URL_PRODUCTION;
         }
@@ -340,7 +320,7 @@ class Config extends AbstractHelper
     {
         //Check for sandbox mode
         if ($this->isSandboxModeSet($storeId)) {
-            return $this->getCustomURLValueOrDefault(self::XML_PATH_CUSTOM_MERCHANT_DASH, self::MERCHANT_DASH_SANDBOX);
+            return self::MERCHANT_DASH_SANDBOX;
         } else {
             return self::MERCHANT_DASH_PRODUCTION;
         }
@@ -357,7 +337,7 @@ class Config extends AbstractHelper
     {
         //Check for sandbox mode
         if ($this->isSandboxModeSet($storeId)) {
-            return $this->getCustomURLValueOrDefault(self::XML_PATH_CUSTOM_CDN, self::CDN_URL_SANDBOX);
+            return self::CDN_URL_SANDBOX;
         } else {
             return self::CDN_URL_PRODUCTION;
         }
@@ -668,12 +648,6 @@ class Config extends AbstractHelper
             ScopeInterface::SCOPE_STORE,
             $store
         );
-    }
-
-    public function getCustomURLValueOrDefault($path, $default)
-    {
-        $storedValue = $this->getScopeConfig()->getValue($path);
-        return !empty($storedValue) ? $storedValue : $default;
     }
 
     /**
@@ -1098,22 +1072,6 @@ class Config extends AbstractHelper
     }
 
     /**
-     * Get Use Reward Points on Shopping Cart configuration
-     *
-     * @param  int|string|Store $store
-     *
-     * @return bool
-     */
-    public function useRewardPointsConfig($store = null)
-    {
-        return $this->getScopeConfig()->isSetFlag(
-            self::XML_PATH_REWARD_POINTS,
-            ScopeInterface::SCOPE_STORE,
-            $store
-        );
-    }
-
-    /**
      * Get Payment Only Checkout Enabled configuration
      *
      * @param int|string|Store $store
@@ -1238,7 +1196,7 @@ class Config extends AbstractHelper
     public function shouldTrackCheckoutFunnel($store = null)
     {
         return $this->getScopeConfig()->isSetFlag(
-            self::XML_PATH_TRACK_CHECKOUT_FUNNEL,
+            self::XML_PATH_ACTIVE,
             ScopeInterface::SCOPE_STORE,
             $store
         );

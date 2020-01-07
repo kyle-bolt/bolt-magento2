@@ -86,8 +86,7 @@ class ReceivedUrl extends Action
             'order_id' => $order->getId(),
             'store_id' => $storeId
         ];
-        // Set admin scope
-        $this->_backendUrl->setScope(0);
+        $this->_backendUrl->setScope($storeId);
 
         return $this->_backendUrl->getUrl('sales/order/view', $params);
     }

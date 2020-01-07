@@ -75,11 +75,7 @@ class DeciderTest  extends TestCase
             ]
         );
     }
-
-    /**
-     * @test
-     */
-    public function isSwitchEnabled_nothingInDbNoRollout() {
+    public function testIsSwitchEnabled_nothingInDbNoRollout() {
         $this->fsRepo
             ->expects($this->once())
             ->method('getByName')
@@ -90,10 +86,7 @@ class DeciderTest  extends TestCase
         $this->assertEquals($fsVal, false);
     }
 
-    /**
-     * @test
-     */
-    public function isSwitchEnabled_ValInDbNoRollout() {
+    public function testIsSwitchEnabled_ValInDbNoRollout() {
         $fs = $this->createMock(FeatureSwitch::class);
         $fs->expects($this->once())->method('getDefaultValue')->willReturn(true);
         $fs->expects($this->once())->method('getRolloutPercentage')->willReturn(0);
@@ -107,10 +100,7 @@ class DeciderTest  extends TestCase
         $this->assertEquals($fsVal, true);
     }
 
-    /**
-     * @test
-     */
-    public function isSwitchEnabled_ValInDbFullRollout() {
+    public function testIsSwitchEnabled_ValInDbFullRollout() {
         $fs = $this->createMock(FeatureSwitch::class);
         $fs->expects($this->once())->method('getValue')->willReturn(true);
         $fs->expects($this->exactly(2))
@@ -126,10 +116,7 @@ class DeciderTest  extends TestCase
         $this->assertEquals($fsVal, true);
     }
 
-    /**
-     * @test
-     */
-    public function isSwitchEnabled_ValInDbPartialRollout() {
+    public function testIsSwitchEnabled_ValInDbPartialRollout() {
         $fs = $this->createMock(FeatureSwitch::class);
         $fs->expects($this->once())->method('getValue')->willReturn(true);
         $fs->expects($this->exactly(2))
@@ -145,10 +132,7 @@ class DeciderTest  extends TestCase
         $this->assertEquals($fsVal, true);
     }
 
-    /**
-     * @test
-     */
-    public function isSwitchEnabled_throwsIfBadSwitchName() {
+    public function testIsSwitchEnabled_throwsIfBadSwitchName() {
         $this->expectException(LocalizedException::class);
         $this->expectExceptionMessage("Unknown feature switch");
         $this->decider->isSwitchEnabled("SECRET_FEATURE_SWITCH");

@@ -39,7 +39,6 @@ use Magento\Payment\Model\Method\AbstractMethod;
 use Magento\Payment\Model\Method\Logger;
 use Magento\Sales\Model\Order as ModelOrder;
 use Magento\Sales\Model\Order\Payment\Transaction;
-use Bolt\Boltpay\Helper\Shared\CurrencyUtils;
 use Bolt\Boltpay\Helper\Bugsnag;
 use Bolt\Boltpay\Helper\MetricsClient;
 use Bolt\Boltpay\Helper\Cart as CartHelper;
@@ -386,12 +385,13 @@ class Payment extends AbstractMethod
                 );
             }
 
+            $captureAmount = $amount * 100;
+
             //Get capture data
             $capturedData = [
                 'transaction_id' => $realTransactionId,
-                'amount'         => $this->getCaptureAmount($order, $amount),
-                'currency'       => $order->getOrderCurrencyCode(),
-                'skip_hook_notification' => true
+                'amount'         => $captureAmount,
+                'currency'       => $order->getOrderCurrencyCode()
             ];
 
             $storeId = $order->getStoreId();
@@ -428,18 +428,6 @@ class Payment extends AbstractMethod
         }
     }
 
-    private function getCaptureAmount($order, $amountInStoreCurrency)
-    {
-        $orderCurrency = $order->getOrderCurrencyCode();
-        if ($order->getStoreCurrencyCode() == $orderCurrency) {
-            return CurrencyUtils::toMinor( $amountInStoreCurrency, $orderCurrency );
-        } else {
-            // Magento passes $amount in store currency but not in order currency - we have to grab amount from invoice
-            $latestInvoice = $order->getInvoiceCollection()->getLastItem();
-            return CurrencyUtils::toMinor( $latestInvoice->getGrandTotal(),$orderCurrency );
-        }
-    }
-
     /**
      * Refund the amount
      *
@@ -468,14 +456,13 @@ class Payment extends AbstractMethod
                 );
             }
 
-            $orderCurrency = $order->getOrderCurrencyCode();
-            // $amount argument of refund method is in store currency, we need to get amount from credit memo to get the value in order's currency.
-            $refundAmount = CurrencyUtils::toMinor( $payment->getCreditMemo()->getGrandTotal(), $orderCurrency );
+            $refundAmount = $amount * 100;
 
+            //Get refund data
             $refundData = [
                 'transaction_id' => $realTransactionId,
                 'amount'         => $refundAmount,
-                'currency'       => $orderCurrency
+                'currency'       => $order->getOrderCurrencyCode()
             ];
 
             $storeId = $order->getStoreId();

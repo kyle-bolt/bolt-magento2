@@ -111,9 +111,9 @@ class ClientTest extends TestCase
     }
 
     /**
-     * @test
+     * @inheritdoc
      */
-    public function getFeatureSwitches_success() {
+    public function testGetFeatureSwitches_success() {
         $httpClient = $this->createMock(ZendClient::class);
         $response = $this->createMock(Response::class);
 
@@ -137,9 +137,9 @@ class ClientTest extends TestCase
     }
 
     /**
-     * @test
+     * @inheritdoc
      */
-    public function getFeatureSwitches_fail() {
+    public function testGetFeatureSwitches_fail() {
         $httpClient = $this->createMock(ZendClient::class);
         $response = $this->createMock(Response::class);
 
@@ -162,10 +162,7 @@ class ClientTest extends TestCase
         $this->graphQLClient->getFeatureSwitches();
     }
 
-    /**
-     * @test
-     */
-    public function sendLogs_success() {
+    public function testSendLogs_success() {
         $httpClient = $this->createMock(ZendClient::class);
         $response = $this->createMock(Response::class);
 
@@ -189,9 +186,9 @@ class ClientTest extends TestCase
     }
 
     /**
-     * @test
+     * @inheritdoc
      */
-    public function sendLogs_fail() {
+    public function testSendLogs_fail() {
         $httpClient = $this->createMock(ZendClient::class);
         $response = $this->createMock(Response::class);
 

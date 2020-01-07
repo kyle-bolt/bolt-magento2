@@ -1,5 +1,4 @@
 <?php /* @var $block Bolt\Boltpay\Block\Checkout\Success */ ?>
-
 <?php if ($block->isAllowInvalidateQuote()): ?>
 <script>
     require([
@@ -9,10 +8,4 @@
         customerData.invalidate(sections);
     });
 </script>
-<?php endif; ?>
-
-<?php if ($block->shouldTrackCheckoutFunnel()): ?>
-    <script type="text/javascript">
-        BoltTrack.recordEvent("OrderConfirmationView");
-    </script>
 <?php endif; ?>

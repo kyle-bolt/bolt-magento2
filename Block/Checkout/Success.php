@@ -16,7 +16,6 @@
  */
 namespace Bolt\Boltpay\Block\Checkout;
 
-use Bolt\Boltpay\Helper\Config;
 use Magento\Framework\View\Element\Template;
 use Magento\Framework\View\Element\Template\Context;
 use Magento\Framework\App\ProductMetadataInterface;
@@ -34,28 +33,20 @@ class Success extends Template
     private $productMetadata;
 
     /**
-     * @var Config
-     */
-    private $configHelper;
-
-    /**
      * Success constructor.
      *
      * @param ProductMetadataInterface $productMetadata
-     * @param Config          $configHelper
      * @param Context                  $context
      * @param array                    $data
      */
     public function __construct(
         ProductMetadataInterface $productMetadata,
-        Config $configHelper,
         Context $context,
         array $data = []
     ) {
         parent::__construct($context, $data);
 
         $this->productMetadata = $productMetadata;
-        $this->configHelper = $configHelper;
     }
 
     /**
@@ -65,13 +56,6 @@ class Success extends Template
     {
         // Workaround for known magento issue - https://github.com/magento/magento2/issues/12504
         return (bool) (version_compare($this->getMagentoVersion(), '2.2.0', '<'));
-    }
-
-    /**
-     * @return bool
-     */
-    public function shouldTrackCheckoutFunnel() {
-        return $this->configHelper->shouldTrackCheckoutFunnel();
     }
 
     /**

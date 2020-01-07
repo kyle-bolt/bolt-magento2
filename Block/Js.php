@@ -209,7 +209,6 @@ class Js extends Template
             'initiate_checkout'        => $this->getInitiateCheckout(),
             'toggle_checkout'          => $this->getToggleCheckout(),
             'is_pre_auth'              => $this->getIsPreAuth(),
-            'default_error_message'    => $this->getBoltPopupErrorMessage(),
         ]);
     }
 

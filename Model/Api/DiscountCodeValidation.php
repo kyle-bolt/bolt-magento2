@@ -34,7 +34,6 @@ use Bolt\Boltpay\Helper\Bugsnag;
 use Bolt\Boltpay\Helper\Cart as CartHelper;
 use Bolt\Boltpay\Helper\Config as ConfigHelper;
 use Bolt\Boltpay\Helper\Hook as HookHelper;
-use Bolt\Boltpay\Helper\Shared\CurrencyUtils;
 use Magento\Quote\Model\Quote;
 use Bolt\Boltpay\Model\ThirdPartyModuleFactory;
 use Magento\Framework\Webapi\Exception as WebApiException;
@@ -298,7 +297,6 @@ class DiscountCodeValidation implements DiscountCodeValidationInterface
             $websiteId = $parentQuote->getStore()->getWebsiteId();
 
             $this->preProcessWebhook($storeId);
-            $parentQuote->getStore()->setCurrentCurrencyCode($parentQuote->getQuoteCurrencyCode());
 
             // get the coupon code
             $discount_code = @$request->discount_code ?: @$request->cart->discount_code;
@@ -646,7 +644,7 @@ class DiscountCodeValidation implements DiscountCodeValidationInterface
         $result = [
             'status'          => 'success',
             'discount_code'   => $couponCode,
-            'discount_amount' => abs(CurrencyUtils::toMinor($address->getDiscountAmount(), $immutableQuote->getQuoteCurrencyCode())),
+            'discount_amount' => abs($this->cartHelper->getRoundAmount($address->getDiscountAmount())),
             'description'     => trim(__('Discount ') . $rule->getDescription()),
             'discount_type'   => $this->convertToBoltDiscountType($rule->getSimpleAction()),
         ];
@@ -747,7 +745,7 @@ class DiscountCodeValidation implements DiscountCodeValidationInterface
         $result = [
             'status'          => 'success',
             'discount_code'   => $code,
-            'discount_amount' => abs(CurrencyUtils::toMinor($giftAmount, $immutableQuote->getQuoteCurrencyCode())),
+            'discount_amount' => abs($this->cartHelper->getRoundAmount($giftAmount)),
             'description'     =>  __('Gift Card'),
             'discount_type'   => $this->convertToBoltDiscountType('by_fixed'),
         ];
@@ -986,7 +984,7 @@ class DiscountCodeValidation implements DiscountCodeValidationInterface
         return $result = [
             'status'          => 'success',
             'discount_code'   => $couponCode,
-            'discount_amount' => abs(CurrencyUtils::toMinor($address->getDiscountAmount(), $parentQuote->getQuoteCurrencyCode())),
+            'discount_amount' => abs($this->cartHelper->getRoundAmount($address->getDiscountAmount())),
             'description'     =>  __('Discount ') . $address->getDiscountDescription(),
             'discount_type'   => $this->convertToBoltDiscountType($rule->getSimpleAction()),
         ];

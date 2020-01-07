@@ -20,7 +20,6 @@ namespace Bolt\Boltpay\Model\Api;
 use Bolt\Boltpay\Api\CreateOrderInterface;
 use Bolt\Boltpay\Exception\BoltException;
 use Bolt\Boltpay\Helper\Cart;
-use Bolt\Boltpay\Helper\Shared\CurrencyUtils;
 use Magento\Framework\Exception\LocalizedException;
 use Bolt\Boltpay\Helper\Order as OrderHelper;
 use Bolt\Boltpay\Helper\Cart as CartHelper;
@@ -208,7 +207,6 @@ class CreateOrder implements CreateOrderInterface
             $immutableQuote = $this->loadQuoteData($quoteId);
 
             $this->preProcessWebhook($immutableQuote->getStoreId());
-            $immutableQuote->getStore()->setCurrentCurrencyCode($immutableQuote->getQuoteCurrencyCode());
 
             $transaction = json_decode($payload);
 
@@ -227,7 +225,7 @@ class CreateOrder implements CreateOrderInterface
                 'status'    => 'success',
                 'message'   => 'Order create was successful',
                 'display_id' => $createdOrder->getIncrementId() . ' / ' . $quote->getId(),
-                'total'      => CurrencyUtils::toMinor($createdOrder->getGrandTotal(), $currency),
+                'total'      => $this->cartHelper->getRoundAmount($createdOrder->getGrandTotal()),
                 'order_received_url' => $this->getReceivedUrl($immutableQuote),
             ]);
             $this->metricsClient->processMetric("order_creation.success", 1, "order_creation.latency", $startTime);
@@ -361,14 +359,8 @@ class CreateOrder implements CreateOrderInterface
 
         $this->logHelper->addInfoLog('[-= getReceivedUrl =-]');
         $storeId = $quote->getStoreId();
-        if ($this->isBackOfficeOrder($quote)) {
-            $urlInterface = $this->backendUrl;
-            // Set admin scope
-            $urlInterface->setScope(0);
-        } else {
-            $urlInterface = $this->url;
-            $urlInterface->setScope($storeId);
-        }
+        $urlInterface = $this->isBackOfficeOrder($quote) ? $this->backendUrl : $this->url;
+        $urlInterface->setScope($storeId);
         $params = [
             '_secure' => true,
             'store_id' => $storeId
@@ -513,7 +505,8 @@ class CreateOrder implements CreateOrderInterface
         foreach ($quoteItems as $item) {
             /** @var QuoteItem $item */
             $sku = trim($item->getSku());
-            $itemPrice = CurrencyUtils::toMinor($item->getPrice(), $quote->getQuoteCurrencyCode());
+            $productId = $item->getProductId();
+            $itemPrice = $this->cartHelper->getRoundAmount($item->getPrice());
 
             $this->hasItemErrors($item);
             $this->validateItemPrice($sku, $itemPrice, $transactionItems);
@@ -610,7 +603,7 @@ class CreateOrder implements CreateOrderInterface
         $transactionTax = $this->getTaxAmountFromTransaction($transaction);
         /** @var Quote\Address $address */
         $address = $quote->isVirtual() ? $quote->getBillingAddress() : $quote->getShippingAddress();
-        $tax = CurrencyUtils::toMinor($address->getTaxAmount(), $quote->getQuoteCurrencyCode());
+        $tax = $this->cartHelper->getRoundAmount($address->getTaxAmount());
 
         if (abs($transactionTax - $tax) > OrderHelper::MISMATCH_TOLERANCE) {
             $this->bugsnag->registerCallback(function ($report) use ($tax, $transactionTax) {
@@ -642,7 +635,7 @@ class CreateOrder implements CreateOrderInterface
             if (! $this->isBackOfficeOrder($quote)) {
                 $amount -= $quote->getShippingAddress()->getShippingDiscountAmount();
             }
-            $storeCost = CurrencyUtils::toMinor($amount, $quote->getQuoteCurrencyCode());
+            $storeCost = $this->cartHelper->getRoundAmount($amount);
         } else {
             $storeCost = 0;
         }
@@ -674,7 +667,7 @@ class CreateOrder implements CreateOrderInterface
      */
     public function validateTotalAmount($quote, $transaction)
     {
-        $quoteTotal = CurrencyUtils::toMinor($quote->getGrandTotal(), $quote->getQuoteCurrencyCode());
+        $quoteTotal = $this->cartHelper->getRoundAmount($quote->getGrandTotal());
         $transactionTotal = $this->getTotalAmountFromTransaction($transaction);
 
         if ($quoteTotal != $transactionTotal) {

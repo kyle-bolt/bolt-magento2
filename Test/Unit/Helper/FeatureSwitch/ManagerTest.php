@@ -71,10 +71,7 @@ class ManagerTest extends TestCase
         );
     }
 
-    /**
-     * @test
-     */
-    public function updateSwitchesFromBolt_EmptyResponse() {
+    public function testUpdateSwitchesFromBolt_EmptyResponse() {
         $this->gql
             ->expects($this->once())
             ->method('getFeatureSwitches')
@@ -87,10 +84,7 @@ class ManagerTest extends TestCase
         $this->manager->updateSwitchesFromBolt();
     }
 
-    /**
-     * @test
-     */
-    public function updateSwitchesFromBolt_ResponseWithOnlyResponse() {
+    public function testUpdateSwitchesFromBolt_ResponseWithOnlyResponse() {
         $response = new BoltResponse();
         $respObj = array("response" => "ok");
         $response->setData($respObj);
@@ -106,10 +100,7 @@ class ManagerTest extends TestCase
         $this->manager->updateSwitchesFromBolt();
     }
 
-    /**
-     * @test
-     */
-    public function updateSwitchesFromBolt_ResponseUptoData() {
+    public function testUpdateSwitchesFromBolt_ResponseUptoData() {
         $response = new BoltResponse();
         $respObj = array("response" => (object)array("data" => "plugin"));
         $response->setData($respObj);
@@ -125,10 +116,7 @@ class ManagerTest extends TestCase
         $this->manager->updateSwitchesFromBolt();
     }
 
-    /**
-     * @test
-     */
-    public function updateSwitchesFromBolt_ResponseUptoPlugin() {
+    public function testUpdateSwitchesFromBolt_ResponseUptoPlugin() {
         $response = new BoltResponse();
         $respObj = array(
             "response" => (object)array(
@@ -148,10 +136,7 @@ class ManagerTest extends TestCase
         $this->manager->updateSwitchesFromBolt();
     }
 
-    /**
-     * @test
-     */
-    public function updateSwitchesFromBolt_ResponseUptoFeatures() {
+    public function testUpdateSwitchesFromBolt_ResponseUptoFeatures() {
         $response = new BoltResponse();
         $respObj = array(
             "response" => (object)array(
@@ -172,10 +157,7 @@ class ManagerTest extends TestCase
         $this->manager->updateSwitchesFromBolt();
     }
 
-    /**
-     * @test
-     */
-    public function updateSwitchesFromBolt_ResponseWithSwitches() {
+    public function testUpdateSwitchesFromBolt_ResponseWithSwitches() {
         $response = new BoltResponse();
         $respObj = array(
             "response" => (object)array(
@@ -207,10 +189,7 @@ class ManagerTest extends TestCase
         $this->manager->updateSwitchesFromBolt();
     }
 
-    /**
-     * @test
-     */
-    public function updateSwitchesFromBolt_ResponseWithMultipleSwitches() {
+    public function testUpdateSwitchesFromBolt_ResponseWithMultipleSwitches() {
         $response = new BoltResponse();
         $respObj = array(
             "response" => (object)array(

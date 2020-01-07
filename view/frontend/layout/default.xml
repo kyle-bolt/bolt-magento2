@@ -27,5 +27,33 @@
         <referenceBlock name="after.body.start">
             <block class="Bolt\Boltpay\Block\Js" name="bolt_popup" template="Bolt_Boltpay::popup.phtml" />
         </referenceBlock>
+        <referenceBlock name="minicart">
+            <arguments>
+                <argument name="jsLayout" xsi:type="array">
+                    <item name="components" xsi:type="array">
+                        <item name="minicart_content" xsi:type="array">
+                            <item name="children" xsi:type="array">
+                                <item name="subtotal.container" xsi:type="array">
+                                    <item name="children" xsi:type="array">
+                                        <item name="subtotal" xsi:type="array">
+                                            <item name="children" xsi:type="array">
+                                                <item name="bolt_checkbox" xsi:type="array">
+                                                    <!-- Add this item to configure your js file  -->
+                                                    <item name="component" xsi:type="string">Bolt_Boltpay/js/view/minicart/bolt_minicart</item>
+                                                    <item name="config" xsi:type="array">
+                                                        <!-- And this to add your html template  -->
+                                                        <item name="template" xsi:type="string">Bolt_Boltpay/minicart/bolt_minicart_actions</item>
+                                                    </item>
+                                                </item>    
+                                            </item>
+                                        </item>
+                                    </item>
+                                </item>
+                            </item>
+                        </item>
+                    </item>
+                </argument>
+            </arguments>
+        </referenceBlock>
     </body>
 </page>

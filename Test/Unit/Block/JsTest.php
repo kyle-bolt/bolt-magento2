@@ -88,7 +88,7 @@ class JsTest extends \PHPUnit\Framework\TestCase
             ->getMock();
 
         $methods = [
-            'isSandboxModeSet', 'isActive', 'getAnyPublishableKey', 'getCustomURLValueOrDefault',
+            'isSandboxModeSet', 'isActive', 'getAnyPublishableKey',
             'getPublishableKeyPayment', 'getPublishableKeyCheckout', 'getPublishableKeyBackOffice',
             'getReplaceSelectors', 'getGlobalCSS', 'getPrefetchShipping', 'getQuoteIsVirtual',
             'getTotalsChangeSelectors', 'getAdditionalCheckoutButtonClass', 'getAdditionalConfigString', 'getIsPreAuth',
@@ -117,7 +117,7 @@ class JsTest extends \PHPUnit\Framework\TestCase
 
         $this->contextMock->method('getRequest')->willReturn($this->requestMock);
         $this->block = $this->getMockBuilder(BlockJs::class)
-            ->setMethods(['configHelper', 'getUrl', 'getBoltPopupErrorMessage'])
+            ->setMethods(['configHelper', 'getUrl'])
             ->setConstructorArgs(
                 [
                     $this->contextMock,
@@ -131,9 +131,9 @@ class JsTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @test
+     * @inheritdoc
      */
-    public function getTrackJsUrl()
+    public function testGetTrackJsUrl()
     {
         // For CDN URL in sandbox mode
         $this->setSandboxMode();
@@ -144,9 +144,9 @@ class JsTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @test
+     * @inheritdoc
      */
-    public function getTrackJsUrlForProductionMode()
+    public function testGetTrackJsUrlForProductionMode()
     {
         // For CDN URL in production mode.
         $this->setSandboxMode(false);
@@ -157,9 +157,9 @@ class JsTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @test
+     * @inheritdoc
      */
-    public function getConnectJsUrl()
+    public function testGetConnectJsUrl()
     {
         // For CDN URL in sandbox mode
         $this->setSandboxMode();
@@ -168,10 +168,7 @@ class JsTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals($result, $expectedUrl, 'Not equal CDN Url in Sandbox mode');
     }
 
-    /**
-     * @test
-     */
-    public function getConnectJsUrlForProductionMode()
+    public function testGetConnectJsUrlForProductionMode()
     {
         // For CDN URL in production mode.
         $this->setSandboxMode(false);
@@ -185,7 +182,7 @@ class JsTest extends \PHPUnit\Framework\TestCase
      * @param $data
      * @dataProvider providerTestGetCheckoutKey
      */
-    public function getCheckoutKey($data)
+    public function testGetCheckoutKey($data)
     {
         $this->configHelper->expects($this->any())
             ->method('isPaymentOnlyCheckoutEnabled')
@@ -247,7 +244,7 @@ class JsTest extends \PHPUnit\Framework\TestCase
      * @param $data
      * @dataProvider providerGetReplaceSelectors
      */
-    public function getReplaceSelectors($data)
+    public function testGetReplaceSelectors($data)
     {
         $this->configHelper->expects($this->any())
             ->method('getReplaceSelectors')
@@ -291,9 +288,9 @@ class JsTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @test
+     * @inheritdoc
      */
-    public function getGlobalCSS()
+    public function testGetGlobalCSS()
     {
         $value = '.replaceable-example-selector1 {
             color: red;
@@ -309,16 +306,16 @@ class JsTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @test
+     * @inheritdoc
      */
-    public function getSettings()
+    public function testGetSettings()
     {
         $result = $this->block->getSettings();
 
         $this->assertJson($result, 'The Settings config do not have a proper JSON format.');
 
         $array = json_decode($result, true);
-        $this->assertCount(17, $array, 'The number of keys in the settings is not correct');
+        $this->assertCount(16, $array, 'The number of keys in the settings is not correct');
 
         $message = 'Cannot find in the Settings the key: ';
         $this->assertArrayHasKey('connect_url', $array, $message . 'connect_url');
@@ -336,13 +333,12 @@ class JsTest extends \PHPUnit\Framework\TestCase
         $this->assertArrayHasKey('additional_checkout_button_class', $array, $message . 'additional_checkout_button_class');
         $this->assertArrayHasKey('initiate_checkout', $array, $message . 'initiate_checkout');
         $this->assertArrayHasKey('toggle_checkout', $array, $message . 'toggle_checkout');
-        $this->assertArrayHasKey('default_error_message', $array, $message . 'default_error_message');
     }
 
     /**
-     * @test
+     * @inheritdoc
      */
-    public function isEnabled()
+    public function testIsEnabled()
     {
         $storeId = 0;
         $this->configHelper->expects($this->any())
@@ -365,10 +361,6 @@ class JsTest extends \PHPUnit\Framework\TestCase
         $this->configHelper->expects($this->any())
             ->method('isSandboxModeSet')
             ->will($this->returnValue($value));
-
-        $this->configHelper
-            ->method('getCustomURLValueOrDefault')
-            ->will($this->returnArgument(1));
     }
 
     public function setBoltInitiateCheckout($value = true)
@@ -379,27 +371,18 @@ class JsTest extends \PHPUnit\Framework\TestCase
             ->willReturn($value);
     }
 
-    /**
-     * @test
-     */
-    public function getInitiateCheckoutFalse()
+    public function testGetInitiateCheckoutFalse()
     {
         $this->assertFalse($this->block->getInitiateCheckout(), 'getInitiateCheckout() method: not working properly');
     }
 
-    /**
-     * @test
-     */
-    public function getInitiateCheckoutTrue()
+    public function testGetInitiateCheckoutTrue()
     {
         $this->setBoltInitiateCheckout();
         $this->assertTrue($this->block->getInitiateCheckout(), 'getInitiateCheckout() method: not working properly');
     }
 
-    /**
-     * @test
-     */
-    public function shouldTrackCheckoutFunnel()
+    public function testShouldTrackCheckoutFunnel()
     {
         $this->configHelper->expects($this->any())
                            ->method('shouldTrackCheckoutFunnel')

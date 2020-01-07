@@ -29,6 +29,7 @@ use Bolt\Boltpay\Helper\Order as OrderHelper;
 use Bolt\Boltpay\Helper\Config as ConfigHelper;
 use Magento\Sales\Model\Order;
 use Bolt\Boltpay\Helper\Bugsnag;
+use Magento\Newsletter\Model\SubscriberFactory;
 
 /**
  * Class Save.
@@ -66,6 +67,9 @@ class Save extends Action
      * @var DataObjectFactory
      */
     private $dataObjectFactory;
+    
+    /** @var SubscriberFactory */
+    protected $subscriberFactory;
 
     /**
      * @param Context $context
@@ -75,6 +79,7 @@ class Save extends Action
      * @param ConfigHelper $configHelper
      * @param Bugsnag $bugsnag
      * @param DataObjectFactory $dataObjectFactory
+     * @param SubscriberFactory $subscriberFactory
      *
      * @codeCoverageIgnore
      */
@@ -85,7 +90,8 @@ class Save extends Action
         OrderHelper $orderHelper,
         configHelper $configHelper,
         Bugsnag $bugsnag,
-        DataObjectFactory $dataObjectFactory
+        DataObjectFactory $dataObjectFactory,
+        SubscriberFactory $subscriberFactory
     ) {
         parent::__construct($context);
         $this->resultJsonFactory = $resultJsonFactory;
@@ -94,6 +100,7 @@ class Save extends Action
         $this->configHelper      = $configHelper;
         $this->bugsnag           = $bugsnag;
         $this->dataObjectFactory = $dataObjectFactory;
+        $this->subscriberFactory = $subscriberFactory;
     }
 
     /**
@@ -117,6 +124,19 @@ class Save extends Action
 
             // return the success page redirect URL
             $result = $this->resultJsonFactory->create();
+            
+            // Customization : implement newsletter
+            try{
+                $isNewsletter  = $this->getRequest()->getParam('newsletter');
+                if( $isNewsletter == 'yes' ){
+                    $customerEmail = $order->getCustomerEmail();                  
+                    $this->subscriberFactory->create()
+                                            ->subscribe($customerEmail);
+                }
+            } catch (Exception $e) {
+                $this->bugsnag->notifyException($e);
+            }
+            
             return $result->setData([
                 'status' => 'success',
                 'success_url' => $this->_url->getUrl($this->configHelper->getSuccessPageRedirect()),
