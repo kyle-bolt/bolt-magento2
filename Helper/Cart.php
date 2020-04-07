@@ -603,6 +603,18 @@ class Cart extends AbstractHelper
     }
 
     /**
+     * @param $cart
+     * @return false|OrderInterface
+     */
+    public function doesOrderExist($cart)
+    {
+        list($incrementId,) = isset($cart['display_id']) ? explode(' / ', $cart['display_id']) : [null, null];
+        $order = $this->getOrderByIncrementId($incrementId);
+
+        return $order;
+    }
+
+    /**
      * Check if the quote is noot deleted
      *
      * @param int|string $quoteId
@@ -668,9 +680,11 @@ class Cart extends AbstractHelper
     {
         //Get cart data
         $cart = $this->getCartData($paymentOnly, $placeOrderPayload);
-        if (!$cart) {
+
+        if (!$cart || $this->doesOrderExist($cart)) {
             return;
         }
+
 
         // If storeId was missed through request, then try to get it from the session quote.
         if ($storeId === null) {
