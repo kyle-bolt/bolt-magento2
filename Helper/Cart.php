@@ -380,6 +380,31 @@ class Cart extends AbstractHelper
         return $this->orderData[$incrementId];
     }
 
+
+    /**
+     * Load Order by quoteId
+     *
+     * @param string $quoteId
+     * @param bool   $forceLoad - use it if needed to load data without cache.
+     *
+     * @return OrderInterface|false
+     */
+    public function getOrderByQuoteId($quoteId, $forceLoad = false)
+    {
+        if ($forceLoad || !isset($this->orderData[$quoteId])) {
+            $searchCriteria = $this->searchCriteriaBuilder
+                ->addFilter('quote_id', $quoteId, 'eq')
+                ->create();
+            $collection = $this->orderRepository
+                ->getList($searchCriteria)
+                ->getItems();
+
+            $this->orderData[$quoteId] = reset($collection);
+        }
+        return $this->orderData[$quoteId];
+    }
+
+
     /**
      * Save quote via repository
      *
@@ -604,12 +629,17 @@ class Cart extends AbstractHelper
 
     /**
      * @param $cart
+     * @param $quote
      * @return false|OrderInterface
      */
-    public function doesOrderExist($cart)
+    public function doesOrderExist($cart, $quote)
     {
         list($incrementId,) = isset($cart['display_id']) ? explode(' / ', $cart['display_id']) : [null, null];
         $order = $this->getOrderByIncrementId($incrementId);
+
+        if ($quote && !$order) {
+            $order = $this->getOrderByQuoteId($quote->getId());
+        }
 
         return $order;
     }
@@ -684,10 +714,9 @@ class Cart extends AbstractHelper
         if (!$cart) {
             return;
         }
-
-        if ($this->doesOrderExist($cart)) {
+        $quote = $this->checkoutSession->getQuote();
+        if ($this->doesOrderExist($cart, $quote)) {
             try {
-                $quote = $this->checkoutSession->getQuote();
                 if ($quote && $quote->getIsActive()) {
                     $quoteId = $quote->getId();
                     $quote->setIsActive(false)->save();
