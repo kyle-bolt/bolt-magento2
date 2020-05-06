@@ -15,6 +15,7 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 namespace Bolt\Boltpay\Plugin;
+use Bolt\Boltpay\Helper\Bugsnag;
 
 /**
  * Class QuotePlugin
@@ -23,6 +24,22 @@ namespace Bolt\Boltpay\Plugin;
  */
 class QuotePlugin
 {
+    /**
+     * @var Bugsnag
+     */
+    private $bugsnag;
+
+    /**
+     * QuotePlugin constructor.
+     * @param Bugsnag $bugsnag
+     */
+    public function __construct(
+        Bugsnag $bugsnag
+    )
+    {
+        $this->bugsnag = $bugsnag;
+    }
+
     /**
      * Override Quote afterSave method.
      * Skip execution for inactive quotes, thus preventing dispatching the after save events.
@@ -37,5 +54,24 @@ class QuotePlugin
             return $proceed();
         }
         return $subject;
+    }
+
+    /**
+     * @param \Magento\Quote\Model\Quote $subject
+     * @param $data
+     * @return array
+     */
+    public function beforeSetIsActive(\Magento\Quote\Model\Quote $subject, $data)
+    {
+        if (
+            $subject->getPayment()
+            && $subject->getPayment()->getMethod() === \Bolt\Boltpay\Model\Payment::METHOD_CODE
+            && $data
+        ) {
+            $quoteID = $subject->getId();
+            $this->bugsnag->notifyError('Active Quote','Quote ID:' . $quoteID);
+        }
+
+        return [$data];
     }
 }
