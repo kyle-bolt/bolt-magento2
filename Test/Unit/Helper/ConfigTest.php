@@ -1195,8 +1195,13 @@ Room 4000',
             ['https://test.bolt.me', true],
             ['https://test.bolt.me/', true],
             ['https://test.bolt.com', false],
+            ['https://test .bolt.com', false],
+            ['https://testbolt.me', false],
             ['https://test.com', false],
-            ['a.com', false]
+            ['test.bolt.me', false],
+            ['', false],
+            ['gopher://127.0.0.1:6379/_FLUSHALL%0D%0Abolt.me', false],
+
         ];
     }
 }
