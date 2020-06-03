@@ -667,8 +667,9 @@ class CreateOrder implements CreateOrderInterface
     {
         $quoteTotal = CurrencyUtils::toMinor($quote->getGrandTotal(), $quote->getQuoteCurrencyCode());
         $transactionTotal = $this->getTotalAmountFromTransaction($transaction);
-
-        if ($quoteTotal != $transactionTotal) {
+        $priceFaultTolerance = $this->configHelper->getPriceFaultTolerance();
+        $difference = abs($quoteTotal - $transactionTotal);
+        if ($difference > 0 && $difference > $priceFaultTolerance ) {
             $this->bugsnag->registerCallback(function ($report) use ($quoteTotal, $transactionTotal) {
                 $report->setMetaData([
                     'Pre Auth' => [
