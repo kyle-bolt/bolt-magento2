@@ -1867,7 +1867,7 @@ class Order extends AbstractHelper
                 $transactionType = Transaction::TYPE_REFUND;
                 $transactionId = $transaction->id . '-refund';
 
-                if ($this->featureSwitches->isCreatingCreditMemoFromWebHookEnabled()){
+                if (Hook::$fromBolt && $this->featureSwitches->isCreatingCreditMemoFromWebHookEnabled()){
                     $this->createCreditMemoForHookRequest($order, $transaction);
                 }
 
