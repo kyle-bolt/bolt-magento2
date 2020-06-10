@@ -491,6 +491,13 @@ class CreateOrder implements CreateOrderInterface
             $quoteItems
         );
 
+        $total = $quote->getTotals();
+        if (isset($total['giftwrapping'])) {
+            $giftWrapping = $total['giftwrapping'];
+            $sku = trim($giftWrapping->getCode());
+            $quoteSkus[] = $sku;
+        }
+
         $transactionSkus = array_keys($transactionItemsSkuQty);
 
         if ($diff = $this->arrayDiff($quoteSkus, $transactionSkus)) {

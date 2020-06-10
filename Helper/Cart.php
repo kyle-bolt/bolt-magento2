@@ -1094,16 +1094,18 @@ class Cart extends AbstractHelper
 
     /**
      * Create cart data items array
-     *
-     * @param string $currencyCode
-     * @param \Magento\Quote\Model\Quote\Item[] $items
-     * @param null|int $storeId
+     * @param $quote
+     * @param null $storeId
      * @param int $totalAmount
      * @param int $diff
      * @return array
+     * @throws \Exception
      */
-    public function getCartItems($currencyCode, $items, $storeId = null, $totalAmount = 0, $diff = 0)
+    public function getCartItems($quote, $storeId = null, $totalAmount = 0, $diff = 0)
     {
+        $items = $quote->getAllVisibleItems();
+        $currencyCode = $quote->getQuoteCurrencyCode();
+
         /////////////////////////////////////////////////////////////////////////////////////////////////////////
         // The "appEmulation" is necessary for geting correct image url from an API call.
         /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1205,6 +1207,23 @@ class Cart extends AbstractHelper
             },
             $items
         );
+
+        $total = $quote->getTotals();
+        if (isset($total['giftwrapping'])) {
+            $giftWrapping = $total['giftwrapping'];
+            $product = [];
+            $product['reference']    = $giftWrapping->getGwId();
+            $product['name']         = $giftWrapping->getTitle()->getText();
+            $product['total_amount'] = CurrencyUtils::toMinor($giftWrapping->getGwPrice(), $currencyCode);
+            $product['unit_price']   = CurrencyUtils::toMinor($giftWrapping->getGwPrice(), $currencyCode);
+            $product['quantity']     = 1;
+            $product['sku']          = trim($giftWrapping->getCode());
+            $product['type']         =  self::ITEM_TYPE_PHYSICAL;
+
+            $totalAmount +=  $product['total_amount'];
+            $products[] = $product;
+        }
+
         /////////////////////////////////////////////////////////////////////////////////////////////////////////
         $this->appEmulation->stopEnvironmentEmulation();
         /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1315,7 +1334,7 @@ class Cart extends AbstractHelper
         $currencyCode = $immutableQuote->getQuoteCurrencyCode();
         $cart['currency'] = $currencyCode;
 
-        list ($cart['items'], $totalAmount, $diff) = $this->getCartItems($currencyCode, $items, $immutableQuote->getStoreId());
+        list ($cart['items'], $totalAmount, $diff) = $this->getCartItems($immutableQuote, $immutableQuote->getStoreId());
 
         // Email field is mandatory for saving the address.
         // For back-office orders (payment only) we need to get it from the store.
