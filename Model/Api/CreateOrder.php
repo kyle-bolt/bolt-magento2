@@ -492,7 +492,7 @@ class CreateOrder implements CreateOrderInterface
         );
 
         $total = $quote->getTotals();
-        if (isset($total['giftwrapping'])) {
+        if (isset($total['giftwrapping']) && @$total['giftwrapping']['gw_id']) {
             $giftWrapping = $total['giftwrapping'];
             $sku = trim($giftWrapping->getCode());
             $quoteSkus[] = $sku;

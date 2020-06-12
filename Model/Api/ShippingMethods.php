@@ -260,7 +260,7 @@ class ShippingMethods implements ShippingMethodsInterface
         }
 
         $total = $this->quote->getTotals();
-        if (isset($total['giftwrapping'])) {
+        if (isset($total['giftwrapping'])  && @$total['giftwrapping']['gw_id']) {
             $giftwrapping = $total['giftwrapping'];
             $sku = trim($giftwrapping->getCode());
             @$quoteItems['quantity'][$sku] += 1;
@@ -687,7 +687,7 @@ class ShippingMethods implements ShippingMethodsInterface
             // for each shipping option, it need to recalculate the shipping discount amount
             if( ! empty($appliedQuoteCouponCode) ){
                 $shippingAddress->setCollectShippingRates(true)
-                                ->collectShippingRates()->save();
+                    ->collectShippingRates()->save();
                 $quote->setCouponCode('')->collectTotals()->save();
                 $quote->setCouponCode($appliedQuoteCouponCode)->collectTotals()->save();
             }
@@ -785,8 +785,8 @@ class ShippingMethods implements ShippingMethodsInterface
             $this->bugsnag->registerCallback(function ($report) use ($errors, $addressData) {
                 $report->setMetaData([
                     'SHIPPING METHOD' => [
-                      'address' => $addressData,
-                      'errors'  => $errors
+                        'address' => $addressData,
+                        'errors'  => $errors
                     ]
                 ]);
             });
@@ -868,7 +868,7 @@ class ShippingMethods implements ShippingMethodsInterface
         $ignoredShippingAddressCoupons = $this->configHelper->getIgnoredShippingAddressCoupons($this->quote->getStoreId());
 
         return $parentQuoteCoupon &&
-                in_array(strtolower($parentQuoteCoupon), $ignoredShippingAddressCoupons) &&
-                !$this->quote->setTotalsCollectedFlag(false)->collectTotals()->getCouponCode();
+            in_array(strtolower($parentQuoteCoupon), $ignoredShippingAddressCoupons) &&
+            !$this->quote->setTotalsCollectedFlag(false)->collectTotals()->getCouponCode();
     }
 }

@@ -1209,7 +1209,7 @@ class Cart extends AbstractHelper
         );
 
         $total = $quote->getTotals();
-        if (isset($total['giftwrapping'])) {
+        if (isset($total['giftwrapping']) && @$total['giftwrapping']['gw_id']) {
             $giftWrapping = $total['giftwrapping'];
             $product = [];
             $product['reference']    = $giftWrapping->getGwId();
