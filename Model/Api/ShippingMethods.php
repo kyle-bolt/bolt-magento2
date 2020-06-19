@@ -260,11 +260,11 @@ class ShippingMethods implements ShippingMethodsInterface
         }
 
         $total = $this->quote->getTotals();
-        if (isset($total['giftwrapping'])  && @$total['giftwrapping']['gw_id']) {
-            $giftwrapping = $total['giftwrapping'];
-            $sku = trim($giftwrapping->getCode());
+        if (isset($total['giftwrapping']) && ($total['giftwrapping']->getGwId() || $total['giftwrapping']->getGwItemIds())) {
+            $giftWrapping = $total['giftwrapping'];
+            $sku = trim($giftWrapping->getCode());
             @$quoteItems['quantity'][$sku] += 1;
-            @$quoteItems['total'][$sku] += CurrencyUtils::toMinor($giftwrapping->getGwPrice(), $this->quote->getQuoteCurrencyCode());
+            @$quoteItems['total'][$sku] += CurrencyUtils::toMinor($giftWrapping->getGwPrice() + $giftWrapping->getGwItemsPrice() + $giftWrapping->getGwCardPrice(), $this->quote->getQuoteCurrencyCode());
         }
 
         if (!$quoteItems) {

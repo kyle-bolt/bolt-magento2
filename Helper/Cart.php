@@ -1209,13 +1209,14 @@ class Cart extends AbstractHelper
         );
 
         $total = $quote->getTotals();
-        if (isset($total['giftwrapping']) && @$total['giftwrapping']['gw_id']) {
+        if (isset($total['giftwrapping']) && ($total['giftwrapping']->getGwId() || $total['giftwrapping']->getGwItemIds())) {
             $giftWrapping = $total['giftwrapping'];
+            $totalPrice = $giftWrapping->getGwPrice() + $giftWrapping->getGwItemsPrice() + $quote->getGwCardPrice();
             $product = [];
             $product['reference']    = $giftWrapping->getGwId();
             $product['name']         = $giftWrapping->getTitle()->getText();
-            $product['total_amount'] = CurrencyUtils::toMinor($giftWrapping->getGwPrice(), $currencyCode);
-            $product['unit_price']   = CurrencyUtils::toMinor($giftWrapping->getGwPrice(), $currencyCode);
+            $product['total_amount'] = CurrencyUtils::toMinor($totalPrice, $currencyCode);
+            $product['unit_price']   = CurrencyUtils::toMinor($totalPrice, $currencyCode);
             $product['quantity']     = 1;
             $product['sku']          = trim($giftWrapping->getCode());
             $product['type']         =  self::ITEM_TYPE_PHYSICAL;
