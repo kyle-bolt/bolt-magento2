@@ -252,209 +252,43 @@ class UpdateCart implements UpdateCartInterface
     {
         try {
             $request = $this->getRequestContent();
-
-            $requestArray = json_decode(json_encode($request), true);
             
-            if (isset($requestArray['cart']['order_reference'])) {
-                $parentQuoteId = $requestArray['cart']['order_reference'];
-                $displayId = isset($requestArray['cart']['display_id']) ? $requestArray['cart']['display_id'] : '';
-                // check if the cart / quote exists and it is active
-                try {
-                    // get parent quote id, order increment id and child quote id
-                    // the latter two are transmitted as display_id field, separated by " / "
-                    list($incrementId, $immutableQuoteId) = array_pad(
-                        explode(' / ', $displayId),
-                        2,
-                        null
-                    );
-
-                    if (!$immutableQuoteId) {
-                        $immutableQuoteId = $parentQuoteId;
-                    }
-
-                    /** @var Quote $parentQuote */
-                    if ($immutableQuoteId == $parentQuoteId) {
-                        // Product Page Checkout - quotes are created as inactive
-                        $parentQuote = $this->cartHelper->getQuoteById($parentQuoteId);
-                    } else {
-                        $parentQuote = $this->cartHelper->getActiveQuoteById($parentQuoteId);
-                    }
-
-                    // check if cart identification data is sent
-                    if (empty($parentQuoteId) || empty($incrementId) || empty($immutableQuoteId)) {
-                        $this->sendErrorResponse(
-                            BoltErrorResponse::ERR_INSUFFICIENT_INFORMATION,
-                            'The order reference is invalid.',
-                            422
-                        );
-
-                        return false;
-                    }
-
-                } catch (\Exception $e) {
-                    $this->bugsnag->notifyException($e);
-                    $this->sendErrorResponse(
-                        BoltErrorResponse::ERR_INSUFFICIENT_INFORMATION,
-                        sprintf('The cart reference [%s] is not found.', $parentQuoteId),
-                        404
-                    );
-                    return false;
-                }
-            } else {
-                $this->bugsnag->notifyError(
-                    BoltErrorResponse::ERR_INSUFFICIENT_INFORMATION,
-                    'The cart.order_reference is not set or empty.'
-                );
-                $this->sendErrorResponse(
-                    BoltErrorResponse::ERR_INSUFFICIENT_INFORMATION,
-                    'The cart reference is not found.',
-                    404
-                );
+            $result = $this->validateQuote($request);
+            
+            if( ! $result ){
                 return false;
             }
+            
+            list($parentQuoteId, $incrementId, $immutableQuoteId, $parentQuote, $immutableQuote) = $result;
 
             $storeId = $parentQuote->getStoreId();
             $websiteId = $parentQuote->getStore()->getWebsiteId();
 
             $this->preProcessWebhook($storeId);
             $parentQuote->getStore()->setCurrentCurrencyCode($parentQuote->getQuoteCurrencyCode());
+            $this->setShipment($request, $immutableQuote);
             
-            if( !empty($requestArray['discount_codes_to_add']) ){
+            // Add discounts
+            if( !empty($request->discount_codes_to_add) ){
                 // get the coupon code
-                $discount_code = $requestArray['discount_codes_to_add'][0];
+                $discount_code = ($request->discount_codes_to_add)[0];
                 $couponCode = trim($discount_code);
                 
-                // Check if empty coupon was sent
-                if ($couponCode === '') {
-                    $this->sendErrorResponse(
-                        BoltErrorResponse::ERR_CODE_INVALID,
-                        'No coupon code provided',
-                        422
-                    );
-    
+                $result = $this->verifyCouponCode($couponCode, $websiteId, $storeId);
+                if( ! $result ){
                     return false;
                 }
     
-                // Load the gift card by code
-                $giftCard = $this->loadGiftCardData($couponCode, $websiteId);
+                list($coupon, $giftCard) = $result;                
     
-                // Apply Unirgy_GiftCert
-                if (empty($giftCard)) {
-                    // Load the gift cert by code
-                    $giftCard = $this->loadGiftCertData($couponCode, $storeId);
-                }
-    
-                // Load Amasty Gift Card account object
-                if (empty($giftCard)) {
-                    $giftCard = $this->discountHelper->loadAmastyGiftCard($couponCode, $websiteId);
-                }
-    
-                // Apply Mageplaza_GiftCard
-                if (empty($giftCard)) {
-                    // Load the gift card by code
-                    $giftCard = $this->discountHelper->loadMageplazaGiftCard($couponCode, $storeId);
-                }
-    
-                $coupon = null;
-                if (empty($giftCard)) {
-                    // Load the coupon
-                    $coupon = $this->loadCouponCodeData($couponCode);
-                }
-    
-                // Check if the coupon and gift card does not exist.
-                if ((empty($coupon) || $coupon->isObjectNew()) && empty($giftCard)) {
-                    $this->sendErrorResponse(
-                        BoltErrorResponse::ERR_CODE_INVALID,
-                        sprintf('The coupon code %s is not found', $couponCode),
-                        404
-                    );
-    
-                    return false;
-                }
-    
-                // check if the order has already been created
-                if ($this->orderHelper->getExistingOrder($incrementId)) {
-                    $this->sendErrorResponse(
-                        BoltErrorResponse::ERR_INSUFFICIENT_INFORMATION,
-                        sprintf('The order #%s has already been created.', $incrementId),
-                        422
-                    );
-                    return false;
-                }
-    
-                // check the existence of child quote
-                /** @var Quote $immutableQuote */
-                $immutableQuote = $this->cartHelper->getQuoteById($immutableQuoteId);
-                if (!$immutableQuote) {
-                    $this->sendErrorResponse(
-                        BoltErrorResponse::ERR_INSUFFICIENT_INFORMATION,
-                        sprintf('The cart reference [%s] is not found.', $immutableQuoteId),
-                        404
-                    );
-                    return false;
-                }
-    
-                // check if cart is empty
-                if (!$immutableQuote->getItemsCount()) {
-                    $this->sendErrorResponse(
-                        BoltErrorResponse::ERR_INSUFFICIENT_INFORMATION,
-                        sprintf('The cart for order reference [%s] is empty.', $immutableQuoteId),
-                        422
-                    );
-    
-                    return false;
-                }
-    
-                // Set the shipment if request payload has that info.
-                if (isset($request->cart->shipments[0]->reference)) {
-                    $shippingAddress = $immutableQuote->getShippingAddress();
-                    $address = $request->cart->shipments[0]->shipping_address;
-                    $address = $this->cartHelper->handleSpecialAddressCases($address);
-                    $region = $this->regionModel->loadByName(@$address->region, @$address->country_code);
-                    $addressData = [
-                                'firstname'    => @$address->first_name,
-                                'lastname'     => @$address->last_name,
-                                'street'       => trim(@$address->street_address1 . "\n" . @$address->street_address2),
-                                'city'         => @$address->locality,
-                                'country_id'   => @$address->country_code,
-                                'region'       => @$address->region,
-                                'postcode'     => @$address->postal_code,
-                                'telephone'    => @$address->phone_number,
-                                'region_id'    => $region ? $region->getId() : null,
-                                'company'      => @$address->company,
-                            ];
-                    if ($this->cartHelper->validateEmail(@$address->email_address)) {
-                        $addressData['email'] = $address->email_address;
-                    }
-    
-                    $shippingAddress->setShouldIgnoreValidation(true);
-                    $shippingAddress->addData($addressData);
-    
-                    $shippingAddress
-                        ->setShippingMethod($request->cart->shipments[0]->reference)
-                        ->setCollectShippingRates(true)
-                        ->collectShippingRates()
-                        ->save();
-                }
-    
-                if ($coupon && $coupon->getCouponId()) {
-                    if ($this->shouldUseParentQuoteShippingAddressDiscount($couponCode, $immutableQuote, $parentQuote)) {
-                        $result = $this->getParentQuoteDiscountResult($couponCode, $coupon, $parentQuote);
-                    } else {
-                        $result = $this->applyingCouponCode($couponCode, $coupon, $immutableQuote, $parentQuote);
-                    }
-                } elseif ($giftCard && $giftCard->getId()) {
-                    $result = $this->applyingGiftCardCode($couponCode, $giftCard, $immutableQuote, $parentQuote);
-                } else {
-                    throw new WebApiException(__('Something happened with current code.'));
-                }
+                $result = $this->applyDiscount($couponCode, $coupon, $giftCard, $immutableQuote, $parentQuote);
     
                 if (!$result || (isset($result['status']) && $result['status'] === 'error')) {
                     // Already sent a response with error, so just return.
                     return false;
                 }
-                $result['order_reference'] = $requestArray['order_reference'];
-                $this->sendSuccessResponse($result, $immutableQuote);
+                
+                $this->sendSuccessResponse($result, $immutableQuote, $request);
             }
             
         } catch (WebApiException $e) {
@@ -486,6 +320,209 @@ class UpdateCart implements UpdateCartInterface
         }
 
         return true;
+    }
+    
+    protected function validateQuote( $request ){
+        if (!empty($request->cart->order_reference)) {
+            $parentQuoteId = $request->cart->order_reference;
+            $displayId = !empty($request->cart->display_id) ? $request->cart->display_id : '';
+            // check if the cart / quote exists and it is active
+            try {
+                // get parent quote id, order increment id and child quote id
+                // the latter two are transmitted as display_id field, separated by " / "
+                list($incrementId, $immutableQuoteId) = array_pad(
+                    explode(' / ', $displayId),
+                    2,
+                    null
+                );
+
+                if (!$immutableQuoteId) {
+                    $immutableQuoteId = $parentQuoteId;
+                }
+
+                /** @var Quote $parentQuote */
+                if ($immutableQuoteId == $parentQuoteId) {
+                    // Product Page Checkout - quotes are created as inactive
+                    $parentQuote = $this->cartHelper->getQuoteById($parentQuoteId);
+                } else {
+                    $parentQuote = $this->cartHelper->getActiveQuoteById($parentQuoteId);
+                }
+
+                // check if cart identification data is sent
+                if (empty($parentQuoteId) || empty($incrementId) || empty($immutableQuoteId)) {
+                    $this->sendErrorResponse(
+                        BoltErrorResponse::ERR_INSUFFICIENT_INFORMATION,
+                        'The order reference is invalid.',
+                        422
+                    );
+
+                    return false;
+                }
+                
+                // check if the order has already been created
+                if ($this->orderHelper->getExistingOrder($incrementId)) {
+                    $this->sendErrorResponse(
+                        BoltErrorResponse::ERR_INSUFFICIENT_INFORMATION,
+                        sprintf('The order #%s has already been created.', $incrementId),
+                        422
+                    );
+                    return false;
+                }
+    
+                // check the existence of child quote
+                $immutableQuote = $this->cartHelper->getQuoteById($immutableQuoteId);
+                if (!$immutableQuote) {
+                    $this->sendErrorResponse(
+                        BoltErrorResponse::ERR_INSUFFICIENT_INFORMATION,
+                        sprintf('The cart reference [%s] is not found.', $immutableQuoteId),
+                        404
+                    );
+                    return false;
+                }
+    
+                // check if cart is empty
+                if (!$immutableQuote->getItemsCount()) {
+                    $this->sendErrorResponse(
+                        BoltErrorResponse::ERR_INSUFFICIENT_INFORMATION,
+                        sprintf('The cart for order reference [%s] is empty.', $immutableQuoteId),
+                        422
+                    );
+    
+                    return false;
+                }
+                
+                return [
+                    $parentQuoteId,
+                    $incrementId,
+                    $immutableQuoteId,
+                    $parentQuote,
+                    $immutableQuote,
+                ];
+
+            } catch (\Exception $e) {
+                $this->bugsnag->notifyException($e);
+                $this->sendErrorResponse(
+                    BoltErrorResponse::ERR_INSUFFICIENT_INFORMATION,
+                    sprintf('The cart reference [%s] is not found.', $parentQuoteId),
+                    404
+                );
+                return false;
+            }
+        } else {
+            $this->bugsnag->notifyError(
+                BoltErrorResponse::ERR_INSUFFICIENT_INFORMATION,
+                'The cart.order_reference is not set or empty.'
+            );
+            $this->sendErrorResponse(
+                BoltErrorResponse::ERR_INSUFFICIENT_INFORMATION,
+                'The cart reference is not found.',
+                404
+            );
+            return false;
+        }
+    }
+    
+    protected function verifyCouponCode( $couponCode, $websiteId, $storeId ){
+        // Check if empty coupon was sent
+        if ($couponCode === '') {
+            $this->sendErrorResponse(
+                BoltErrorResponse::ERR_CODE_INVALID,
+                'No coupon code provided',
+                422
+            );
+
+            return false;
+        }
+
+        // Load the gift card by code
+        $giftCard = $this->loadGiftCardData($couponCode, $websiteId);
+
+        // Apply Unirgy_GiftCert
+        if (empty($giftCard)) {
+            // Load the gift cert by code
+            $giftCard = $this->loadGiftCertData($couponCode, $storeId);
+        }
+
+        // Load Amasty Gift Card account object
+        if (empty($giftCard)) {
+            $giftCard = $this->discountHelper->loadAmastyGiftCard($couponCode, $websiteId);
+        }
+
+        // Apply Mageplaza_GiftCard
+        if (empty($giftCard)) {
+            // Load the gift card by code
+            $giftCard = $this->discountHelper->loadMageplazaGiftCard($couponCode, $storeId);
+        }
+
+        $coupon = null;
+        if (empty($giftCard)) {
+            // Load the coupon
+            $coupon = $this->loadCouponCodeData($couponCode);
+        }
+
+        // Check if the coupon and gift card does not exist.
+        if ((empty($coupon) || $coupon->isObjectNew()) && empty($giftCard)) {
+            $this->sendErrorResponse(
+                BoltErrorResponse::ERR_CODE_INVALID,
+                sprintf('The coupon code %s is not found', $couponCode),
+                404
+            );
+
+            return false;
+        }
+        
+        return [$coupon, $giftCard];
+    }
+    
+    // Set the shipment if request payload has that info.
+    protected function setShipment($request, $immutableQuote) {        
+        if (isset($request->cart->shipments[0]->reference)) {
+            $shippingAddress = $immutableQuote->getShippingAddress();
+            $address = $request->cart->shipments[0]->shipping_address;
+            $address = $this->cartHelper->handleSpecialAddressCases($address);
+            $region = $this->regionModel->loadByName(@$address->region, @$address->country_code);
+            $addressData = [
+                        'firstname'    => @$address->first_name,
+                        'lastname'     => @$address->last_name,
+                        'street'       => trim(@$address->street_address1 . "\n" . @$address->street_address2),
+                        'city'         => @$address->locality,
+                        'country_id'   => @$address->country_code,
+                        'region'       => @$address->region,
+                        'postcode'     => @$address->postal_code,
+                        'telephone'    => @$address->phone_number,
+                        'region_id'    => $region ? $region->getId() : null,
+                        'company'      => @$address->company,
+                    ];
+            if ($this->cartHelper->validateEmail(@$address->email_address)) {
+                $addressData['email'] = $address->email_address;
+            }
+    
+            $shippingAddress->setShouldIgnoreValidation(true);
+            $shippingAddress->addData($addressData);
+    
+            $shippingAddress
+                ->setShippingMethod($request->cart->shipments[0]->reference)
+                ->setCollectShippingRates(true)
+                ->collectShippingRates()
+                ->save();
+        }
+    }
+    
+    protected function applyDiscount( $couponCode, $coupon, $giftCard, $immutableQuote, $parentQuote )
+    {
+        if ($coupon && $coupon->getCouponId()) {
+            if ($this->shouldUseParentQuoteShippingAddressDiscount($couponCode, $immutableQuote, $parentQuote)) {
+                $result = $this->getParentQuoteDiscountResult($couponCode, $coupon, $parentQuote);
+            } else {
+                $result = $this->applyingCouponCode($couponCode, $coupon, $immutableQuote, $parentQuote);
+            }
+        } elseif ($giftCard && $giftCard->getId()) {
+            $result = $this->applyingGiftCardCode($couponCode, $giftCard, $immutableQuote, $parentQuote);
+        } else {
+            throw new WebApiException(__('Something happened with current code.'));
+        }
+        
+        return $result;
     }
 
     /**
@@ -800,17 +837,12 @@ class UpdateCart implements UpdateCartInterface
      * @return array
      * @throws \Exception
      */
-    private function getCartTotals($quote)
+    protected function getCartData($quote)
     {
         $request = $this->getRequestContent();
         $is_has_shipment = isset($request->cart->shipments[0]->reference);
         $cart = $this->cartHelper->getCartData($is_has_shipment, null, $quote);
-        return $cart; 
-        return [
-            'total_amount' => $cart['total_amount'],
-            'tax_amount'   => $cart['tax_amount'],
-            'discounts'    => $cart['discounts'],
-        ];
+        return $cart;
     }
 
     /**
@@ -826,7 +858,7 @@ class UpdateCart implements UpdateCartInterface
     {
         $additionalErrorResponseData = [];
         if ($quote) {
-            $additionalErrorResponseData['cart'] = $this->getCartTotals($quote);
+            $additionalErrorResponseData['cart'] = $this->getCartData($quote);
         }
 
         $encodeErrorResult = $this->errorResponse
@@ -846,13 +878,12 @@ class UpdateCart implements UpdateCartInterface
      * @return array
      * @throws \Exception
      */
-    private function sendSuccessResponse($result, $quote)
+    protected function sendSuccessResponse($result, $quote, $request)
     {
-        $order_reference = $result['order_reference'];
         $result = array();
         $result['status'] = 'success';
-        $result['order_reference'] = $order_reference;
-        $result['order_create'] = $this->getCartTotals($quote);
+        $result['order_reference'] = $request->order_reference;
+        $result['order_create'] = $this->getCartData($quote);
 
         $this->response->setBody(json_encode($result));
         $this->response->sendResponse();
