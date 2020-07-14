@@ -813,20 +813,25 @@ class Cart extends AbstractHelper
         if ($this->customerSession->isLoggedIn()) {
             $customer = $this->customerSession->getCustomer();
 
-            $signRequest = [
-                'merchant_user_id' => $customer->getId(),
-            ];
-            $signResponse = $this->getSignResponse(
-                $signRequest,
-                $quote ? $quote->getStoreId() : null
-            )->getResponse();
-
-            if ($signResponse) {
-                $hints['signed_merchant_user_id'] = [
-                    "merchant_user_id" => $signResponse->merchant_user_id,
-                    "signature"        => $signResponse->signature,
-                    "nonce"            => $signResponse->nonce,
+            // TODO: Customization => Implement a feature switch to toogle the logic to pre-fill address from Bolt for the logged-in customer.
+            $isBoltAccountLoggedInFeatureEnabled = false;
+            if ($isBoltAccountLoggedInFeatureEnabled) {
+                $signRequest = [
+                    'merchant_user_id' => $customer->getId(),
                 ];
+                $signResponse = $this->getSignResponse(
+                    $signRequest,
+                    $quote ? $quote->getStoreId() : null
+                )->getResponse();
+
+                if ($signResponse) {
+                    $hints['signed_merchant_user_id'] = [
+                        "merchant_user_id" => $signResponse->merchant_user_id,
+                        "signature"        => $signResponse->signature,
+                        "nonce"            => $signResponse->nonce,
+                    ];
+                }
+
             }
 
             if ($quote && $quote->isVirtual()) {
