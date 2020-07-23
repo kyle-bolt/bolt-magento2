@@ -1301,7 +1301,7 @@ class Cart extends AbstractHelper
      * @param Quote $quote
      * @return QuoteAddress
      */
-    protected function getCalculationAddress($quote)
+    public function getCalculationAddress($quote)
     {
         return $quote->isVirtual() ? $quote->getBillingAddress() : $quote->getShippingAddress();
     }
@@ -1673,7 +1673,8 @@ class Cart extends AbstractHelper
             $discounts[] = [
                 'description' => trim(__('Discount ') . $address->getDiscountDescription()),
                 'amount'      => $roundedAmount,
-                'reference'   => $address->getCouponCode()
+                'reference'   => $address->getCouponCode(),
+                'discount_category' => 'coupon'
             ];
 
             $diff -= CurrencyUtils::toMinorWithoutRounding($amount, $currencyCode) - $roundedAmount;
@@ -1885,6 +1886,7 @@ class Cart extends AbstractHelper
                 $discountItem = [
                     'description' => $description . @$totals[$discount]->getTitle(),
                     'amount'      => $roundedAmount,
+                    'discount_category' => 'giftcard'
                 ];
 
                 if ($discount == Discount::AMASTY_STORECREDIT) {
