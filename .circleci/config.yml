@@ -45,7 +45,7 @@ commands:
             - << parameters.m2_version >>-v1-<< parameters.cache_key_separator >>-composer-lock
       - when:
           condition:
-            - equal: [ integration, << parametets.test_type >> ]
+            equal: [ integration, << parametets.test_type >> ]
           steps:
             - run:
                 name: << parameters.php_version >> Magento << parameters.m2_version >> Integration
@@ -56,7 +56,7 @@ commands:
                   Test/scripts/ci-integration.sh
       - unless:
           condition:
-            - equal: [ integration, << parametets.test_type >> ]
+            equal: [ integration, << parametets.test_type >> ]
           steps:
             - run:
                 name: << parameters.php_version >> << parameters.m2_version >> << parameters.test_type >>
@@ -67,11 +67,11 @@ commands:
                   export MAGENTO_VERSION=<< parameters.m2_version >>
                 when:
                   condition:
-                    - equal: [ unit, << parametets.test_type >> ]
+                    equal: [ unit, << parametets.test_type >> ]
                   command: Test/scripts/ci-unit.sh
                 unless:
                   condition:
-                    - equal: [ unit, << parametets.test_type >> ]
+                    equal: [ unit, << parametets.test_type >> ]
                   command: Test/scripts/ci-magento-integration.sh
       - save_cache:
           key: << parameters.m2_version >>-v1-<< parameters.cache_key_separator >>-lock-{{ arch }}-{{ checksum "composer.json" }}
