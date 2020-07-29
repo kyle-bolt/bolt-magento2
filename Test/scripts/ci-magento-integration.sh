@@ -23,8 +23,6 @@ cp magento/app/code/Bolt/Boltpay/Test/Unit/integration_phpunit.xml magento/dev/t
 echo "Creating DB for integration tests"
 mysql -uroot -h 127.0.0.1 -e 'CREATE DATABASE magento_integration_tests;'
 
-# TODO(vitaliy): Investigate the root of the issue. See https://github.com/magento/magento2/issues/24650
-sed -i 's/is_synchronous="false"//g' magento/vendor/magento/module-inventory-catalog/etc/communication.xml
 
 cd magento/dev/tests/integration/
 cp etc/install-config-mysql.php.dist etc/install-config-mysql.php
