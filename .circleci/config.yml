@@ -69,9 +69,9 @@ commands:
                   condition:
                     - equal: [ unit, << parametets.test_type >> ]
                   command: Test/scripts/ci-unit.sh
-                when:
+                unless:
                   condition:
-                    - equal: [ magento-integration, << parametets.test_type >> ]
+                    - equal: [ unit, << parametets.test_type >> ]
                   command: Test/scripts/ci-magento-integration.sh
       - save_cache:
           key: << parameters.m2_version >>-v1-<< parameters.cache_key_separator >>-lock-{{ arch }}-{{ checksum "composer.json" }}
