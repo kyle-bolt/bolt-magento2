@@ -32,9 +32,10 @@ commands:
         type: enum
         default: "php72"
         enum: ["php70", "php71", "php72"]
-      is_integration:
-        type: boolean
-        default: false
+      test_type:
+        type: enum
+        default: "unit"
+        enum: ["unit", "integration", "magento-integration"]
     steps:
       - checkout
       - restore_cache:
@@ -43,7 +44,8 @@ commands:
             - << parameters.m2_version >>-v1-<< parameters.cache_key_separator >>-composer-lock-{{ arch }}
             - << parameters.m2_version >>-v1-<< parameters.cache_key_separator >>-composer-lock
       - when:
-          condition: << parameters.is_integration >>
+          condition:
+            - equal: [ integration, << parametets.test_type >> ]
           steps:
             - run:
                 name: << parameters.php_version >> Magento << parameters.m2_version >> Integration
@@ -53,16 +55,24 @@ commands:
                   export MAGENTO_VERSION=<< parameters.m2_version >>
                   Test/scripts/ci-integration.sh
       - unless:
-          condition: << parameters.is_integration >>
+          condition:
+            - equal: [ integration, << parametets.test_type >> ]
           steps:
             - run:
-                name: << parameters.php_version >> << parameters.m2_version >> Unit
+                name: << parameters.php_version >> << parameters.m2_version >> << parameters.test_type >>
                 command: |
                   mkdir ./artifacts
                   export COMPOSER_MEMORY_LIMIT=3G
                   export TEST_ENV=<< parameters.php_version >>
                   export MAGENTO_VERSION=<< parameters.m2_version >>
-                  Test/scripts/ci-unit.sh
+                when:
+                  condition:
+                    - equal: [ unit, << parametets.test_type >> ]
+                  command: Test/scripts/ci-unit.sh
+                when:
+                  condition:
+                    - equal: [ magento-integration, << parametets.test_type >> ]
+                  command: Test/scripts/ci-magento-integration.sh
       - save_cache:
           key: << parameters.m2_version >>-v1-<< parameters.cache_key_separator >>-lock-{{ arch }}-{{ checksum "composer.json" }}
           paths:
@@ -155,7 +165,7 @@ jobs:
           cache_key_separator: php72mag23installed
           m2_version: "2.3.0"
           php_version: "php72"
-          is_integration: true
+          test_type: "integration"
 
   unit-php72-magento23:
     docker:
@@ -169,7 +179,7 @@ jobs:
           cache_key_separator: php72mag23installed
           m2_version: "2.3.0"
           php_version: "php72"
-          is_integration: false
+          test_type: "unit"
 
   unit-php71-magento22:
     docker:
@@ -183,7 +193,7 @@ jobs:
           cache_key_separator: php71mag22installed
           m2_version: "2.2.0"
           php_version: "php71"
-          is_integration: false
+          test_type: "unit"
 
   unit-php70-magento22:
     docker:
@@ -197,7 +207,21 @@ jobs:
           cache_key_separator: php70mag22installed
           m2_version: "2.2.0"
           php_version: "php70"
-          is_integration: false
+          test_type: "unit"
+
+  magento-integration-php72-magento23:
+    docker:
+      - image: boltdev/m2-installed-plugin-ci-php72:2.3.0-v1
+        auth:
+          username: $DOCKERHUB_USER
+          password: $DOCKERHUB_PASS
+      - image: circleci/mysql:5.7
+    steps:
+      - m2-php-test:
+          cache_key_separator: php72mag23installed
+          m2_version: "2.3.0"
+          php_version: "php72"
+          test_type: "magento-integration"
 
   integration-php72-magento23-for-merchant-branches:
     docker:
