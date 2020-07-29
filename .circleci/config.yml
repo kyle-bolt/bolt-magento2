@@ -352,7 +352,7 @@ workflows:
       - tag-release-candidate
   merchant-branch-test:
     jobs:
-      #- unit-php72-magento23-for-merchant-branches
+      - unit-php72-magento23-for-merchant-branches
       #- unit-php71-magento22-for-merchant-branches
       #- unit-php70-magento22-for-merchant-branches
       #- integration-php72-magento23-for-merchant-branches
